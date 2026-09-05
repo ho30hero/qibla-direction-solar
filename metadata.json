@@ -1,0 +1,10 @@
+{
+  "name": "Qibla Direction & Solar Shadow Alignment Calculator",
+  "description": "محاسبه‌گر فوق‌العاده دقیق قبله و انطباق سایه شاخص با جهت کعبه به همراه نقشه تعاملی، تقویم دوگانه جلالی و میلادی، و جستجوی جغرافیایی",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

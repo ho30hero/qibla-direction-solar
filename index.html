@@ -1,0 +1,3456 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>محاسبه‌گر قبله و انطباق سایه شاخص | Qibla Direction & Solar Shadow Alignment</title>
+  <meta name="description" content="محاسبه‌گر فوق‌العاده دقیق جهت قبله، انطباق سایه شاخص با جهت کعبه، فاصله کروی، تقویم دوگانه جلالی و میلادی و نقشه تعاملی" />
+  <meta property="og:title" content="محاسبه‌گر قبله و انطباق سایه شاخص" />
+  <meta property="og:description" content="محاسبه دقیق قبله و زمان انطباق سایه خورشید با قبله با نقشه و تقویم شمسی/میلادی" />
+  <meta property="og:type" content="website" />
+  
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="theme-color" content="#0A485F" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="قبله‌یاب" />
+
+  <!-- Google Fonts: Vazirmatn, Plus Jakarta Sans & JetBrains Mono for Technical Telemetry -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- External CDNs: Leaflet, SunCalc, Jalaali -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jalaali-js/dist/jalaali.min.js"></script>
+
+  <style>
+    :root {
+      --bg-slate: #f8fafc;
+      --panel-bg: #ffffff;
+      --primary-teal: #0A485F;
+      --primary-teal-hover: #073546;
+      --accent-terracotta: #F04D23;
+      --accent-green: #16a34a;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-label: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-light: #f1f5f9;
+      --shadow-card: 0 10px 30px -15px rgba(0, 0, 0, 0.05);
+      --shadow-floating: 0 20px 35px -10px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Vazirmatn', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-slate);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .latin-num, .font-mono {
+      font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
+      direction: ltr;
+      display: inline-block;
+    }
+
+    /* Compact Modern Brand Card (Inside Right Column, Not Sticky, Uniform Theme) */
+    .brand-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem 1.15rem;
+      box-shadow: var(--shadow-card);
+      position: relative;
+    }
+
+    .brand-card-inner {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary-teal) 0%, #073546 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(10, 72, 95, 0.22);
+    }
+
+    .brand-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .brand-card-title {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--primary-teal);
+      line-height: 1.35;
+      margin-bottom: 0.2rem;
+    }
+
+    .brand-card-subtitle {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .btn-pwa-install {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      padding: 0.5rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+      min-height: 40px;
+      touch-action: manipulation;
+    }
+
+    .btn-pwa-install:hover {
+      background: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-pwa-install:active {
+      transform: scale(0.98);
+    }
+
+    /* Main Dashboard Layout (Multi-column Desktop & Ergonomic Density) */
+    main {
+      flex: 1;
+      max-width: 1600px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    /* Controls Area (Right side in RTL) */
+    .controls-area {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .controls-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    @media (max-width: 1260px) and (min-width: 961px) {
+      .dashboard-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+      .controls-area {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 960px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+      .controls-area {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sidebar Panels - Technical Data Grid */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--panel-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      padding: 1.25rem;
+      box-shadow: var(--shadow-card);
+      transition: all 0.2s ease;
+    }
+
+    .card-label-tech {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-label);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--primary-teal);
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-bottom: 0.85rem;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 0.5rem;
+    }
+
+    .card-title svg {
+      color: var(--primary-teal);
+      flex-shrink: 0;
+    }
+
+    /* Search & Location Box */
+    .search-row {
+      display: flex;
+      gap: 0.5rem;
+      position: relative;
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 0.65rem 0.85rem 0.65rem 2.2rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-family: inherit;
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.2s;
+      background: #f8fafc;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary-teal);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(10, 72, 95, 0.15);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.65rem 1rem;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--primary-teal);
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(10, 72, 95, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-teal-hover);
+    }
+
+    .btn-outline {
+      background: #ffffff;
+      color: var(--primary-teal);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .btn-terracotta {
+      background: var(--accent-terracotta);
+      color: #ffffff;
+    }
+
+    /* Search Results Dropdown */
+    .search-results {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      left: 0;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: var(--shadow-floating);
+      z-index: 1200;
+      max-height: 240px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .search-item {
+      padding: 0.6rem 0.85rem;
+      cursor: pointer;
+      font-size: 0.82rem;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.15s;
+    }
+
+    .search-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-item:hover {
+      background: #f0fdfa;
+      color: var(--primary-teal);
+    }
+
+    /* Technical Coordinates Data Grid */
+    .coords-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .coords-item {
+      display: flex;
+      flex-direction: column;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.55rem 0.7rem;
+    }
+
+    .coords-label {
+      color: var(--text-label);
+      font-size: 0.66rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.15rem;
+    }
+
+    .coords-value {
+      font-weight: 700;
+      color: var(--primary-teal);
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Quick Preset Cities */
+    .preset-cities {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      margin-top: 0.6rem;
+    }
+
+    .city-chip {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .city-chip:hover {
+      background: var(--primary-teal);
+      color: #ffffff;
+      border-color: var(--primary-teal);
+    }
+
+    /* Primary Technical Calculation Metrics */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .metric-box {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .metric-box.highlight {
+      background: #ffffff;
+      border: 1px solid rgba(240, 77, 35, 0.3);
+      box-shadow: 0 4px 12px -2px rgba(240, 77, 35, 0.08);
+    }
+
+    .metric-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-label);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .metric-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary-teal);
+      margin: 0.3rem 0 0.15rem;
+      line-height: 1.1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .metric-val.terracotta {
+      color: var(--accent-terracotta);
+    }
+
+    .metric-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* Technical Angle Progress / Gauge Bar */
+    .angle-progress-wrapper {
+      width: 100%;
+      background: #e2e8f0;
+      height: 6px;
+      border-radius: 9999px;
+      overflow: hidden;
+      margin: 0.35rem 0 0.25rem;
+    }
+
+    .angle-progress-bar {
+      background: var(--accent-terracotta);
+      height: 100%;
+      width: 60%;
+      transition: width 0.4s ease;
+      border-radius: 9999px;
+    }
+
+    /* Compass Mini Visualizer */
+    .compass-card {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 0.75rem 0.85rem;
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      margin-top: 0.75rem;
+    }
+
+    .compass-dial {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 2px solid #cbd5e1;
+      position: relative;
+      background: radial-gradient(circle, #ffffff 45%, #e2e8f0 100%);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .compass-needle {
+      position: absolute;
+      width: 4px;
+      height: 52px;
+      top: 6px;
+      left: 30px;
+      transform-origin: 2px 26px;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .needle-north {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-bottom: 24px solid var(--accent-green);
+      position: absolute;
+      top: 0;
+      left: -2px;
+    }
+
+    .needle-south {
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 24px solid #cbd5e1;
+      position: absolute;
+      bottom: 0;
+      left: -2px;
+    }
+
+    .compass-pin {
+      width: 6px;
+      height: 6px;
+      background: #0f172a;
+      border-radius: 50%;
+      position: absolute;
+      top: 29px;
+      left: 29px;
+      z-index: 2;
+    }
+
+    .compass-details {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    /* Dual-Calendar System */
+    .calendar-tabs {
+      display: flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .calendar-tab {
+      flex: 1;
+      padding: 0.45rem 0.5rem;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .calendar-tab.active {
+      background: #ffffff;
+      color: var(--primary-teal);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .calendar-controls {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .select-input, .date-input {
+      flex: 1;
+      padding: 0.5rem 0.6rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-family: inherit;
+      font-size: 0.82rem;
+      background: #ffffff;
+      outline: none;
+    }
+
+    .select-input:focus, .date-input:focus {
+      border-color: var(--primary-teal);
+    }
+
+    /* Technical Solar Shadow Alignment Box */
+    .alignment-card {
+      border: 1px solid rgba(10, 72, 95, 0.15);
+      background: rgba(10, 72, 95, 0.03);
+      border-radius: 12px;
+    }
+
+    .alignment-status {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid rgba(10, 72, 95, 0.12);
+      margin-top: 0.65rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot.green {
+      background: #16a34a;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.25);
+    }
+
+    .status-dot.amber {
+      background: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+    }
+
+    /* Time Simulation Slider & Dual Telemetry */
+    .time-slider-card {
+      margin-top: 0.25rem;
+    }
+
+    .time-dual-telemetry {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .time-telemetry-item {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.45rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .time-telemetry-item.active-target {
+      background: #ffffff;
+      border-color: rgba(10, 72, 95, 0.25);
+      box-shadow: 0 2px 6px rgba(10, 72, 95, 0.05);
+    }
+
+    .time-telemetry-label {
+      font-size: 0.64rem;
+      color: var(--text-label);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .time-telemetry-val {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--primary-teal);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 0.1rem;
+    }
+
+    .btn-sync-time {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: #f0fdfa;
+      border: 1px solid rgba(13, 148, 136, 0.25);
+      color: var(--primary-teal);
+      font-weight: 700;
+      font-size: 0.72rem;
+      cursor: pointer;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+      font-family: inherit;
+    }
+
+    .btn-sync-time:hover {
+      background: var(--primary-teal);
+      color: #ffffff;
+    }
+
+    .time-slider {
+      width: 100%;
+      accent-color: var(--primary-teal);
+      cursor: pointer;
+    }
+
+    /* Ephemeris Sunrise/Sunset Strip */
+    .ephemeris-strip {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.4rem;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.45rem 0.65rem;
+      margin-top: 0.65rem;
+      font-size: 0.73rem;
+    }
+
+    .ephemeris-item {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: var(--text-muted);
+    }
+
+    .ephemeris-item strong {
+      color: var(--primary-teal);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+    }
+
+    /* Night Warning Alert Banner */
+    .night-alert-banner {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-right: 4px solid #f59e0b;
+      border-radius: 8px;
+      padding: 0.75rem 0.85rem;
+      margin-top: 0.85rem;
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-start;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .night-alert-banner.dark-night {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-right: 4px solid #38bdf8;
+      color: #f1f5f9;
+    }
+
+    .night-alert-banner .night-icon {
+      font-size: 1.3rem;
+      line-height: 1;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .night-alert-banner .night-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      color: #92400e;
+    }
+
+    .night-alert-banner.dark-night .night-title {
+      color: #38bdf8;
+    }
+
+    .night-alert-banner .night-desc {
+      font-size: 0.75rem;
+      line-height: 1.6;
+      color: #78350f;
+    }
+
+    .night-alert-banner.dark-night .night-desc {
+      color: #cbd5e1;
+    }
+
+    /* Islamic Prayer Times Grid */
+    .prayer-card {
+      border: 1px solid rgba(10, 72, 95, 0.16);
+      background: #ffffff;
+      border-radius: 12px;
+      position: relative;
+    }
+
+    .prayer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .prayer-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .prayer-cell {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.55rem 0.65rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .prayer-cell.cell-midnight {
+      grid-column: span 2;
+    }
+
+    .prayer-cell:hover {
+      background: #ffffff;
+      border-color: rgba(10, 72, 95, 0.28);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .prayer-cell.active-prayer {
+      background: #f0fdfa;
+      border-color: #0d9488;
+      box-shadow: 0 0 0 1.5px #0d9488;
+    }
+
+    .prayer-cell.next-prayer {
+      border-color: #f59e0b;
+      background: #fffbeb;
+      box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.4);
+    }
+
+    .prayer-label-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-label);
+    }
+
+    .prayer-time-val {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--primary-teal);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badge-mini {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      background: rgba(10, 72, 95, 0.08);
+      color: var(--primary-teal);
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', 'Vazirmatn', monospace;
+    }
+
+    /* Map Canvas Container - Sticky on Desktop, strictly bounded to viewport height */
+    .map-wrapper {
+      background-color: #e2e8f0;
+      background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+      background-size: 20px 20px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      width: 100%;
+      height: clamp(380px, 50vh, 520px);
+      min-height: 380px;
+    }
+
+    @media (min-width: 961px) {
+      .map-wrapper {
+        position: sticky;
+        top: 1.25rem;
+        height: clamp(520px, calc(100vh - 2.5rem), 850px);
+        max-height: calc(100vh - 2.5rem);
+        min-height: 500px;
+        align-self: start;
+      }
+    }
+
+    @media (max-width: 960px) and (orientation: portrait) {
+      .map-wrapper {
+        height: 90vh !important;
+        height: 90dvh !important;
+        max-height: 90vh !important;
+        max-height: 90dvh !important;
+        min-height: 480px;
+      }
+    }
+
+    /* Mobile Gesture Feedback Overlay */
+    .map-gesture-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #ffffff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      text-align: center;
+      white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .map-gesture-overlay.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    #map {
+      width: 100%;
+      flex: 1;
+      cursor: crosshair !important;
+      z-index: 10;
+    }
+
+    /* Leaflet Control Refinements & Position Alignment */
+    .leaflet-top.leaflet-left {
+      top: 12px;
+      left: 12px;
+    }
+
+    .leaflet-control-zoom {
+      margin: 0 !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: 8px !important;
+      overflow: hidden;
+      box-shadow: var(--shadow-floating) !important;
+    }
+
+    .leaflet-control-zoom a {
+      background-color: rgba(255, 255, 255, 0.95) !important;
+      color: #334155 !important;
+      width: 32px !important;
+      height: 32px !important;
+      line-height: 32px !important;
+      font-size: 16px !important;
+      transition: all 0.15s ease;
+    }
+
+    .leaflet-control-zoom a:hover {
+      background-color: #f1f5f9 !important;
+      color: var(--primary-teal) !important;
+    }
+
+    /* On-Map Layer Selector (Street vs Satellite) - Positioned next to zoom buttons with zero overlap */
+    .map-layer-switch {
+      position: absolute;
+      top: 12px;
+      left: 56px;
+      z-index: 500;
+      display: flex;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 3px;
+      box-shadow: var(--shadow-floating);
+      gap: 3px;
+    }
+
+    .layer-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+
+    .layer-pill-btn:hover {
+      color: var(--primary-teal);
+      background: #f1f5f9;
+    }
+
+    .layer-pill-btn.active {
+      background: var(--primary-teal);
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(10, 72, 95, 0.25);
+    }
+
+    /* On-Map Night Mode Floating Badge - Positioned at bottom-left */
+    .map-night-badge {
+      position: absolute;
+      bottom: 24px;
+      left: 20px;
+      z-index: 500;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #f1f5f9;
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Floating On-Map Technical Legend */
+    .map-legend {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+      box-shadow: var(--shadow-floating);
+      z-index: 500;
+      min-width: 220px;
+      font-size: 0.78rem;
+    }
+
+    .legend-title {
+      font-weight: 700;
+      color: var(--text-label);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+      font-size: 0.68rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 0.35rem;
+    }
+
+    .legend-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.76rem;
+    }
+
+    .legend-line {
+      width: 24px;
+      height: 4px;
+      border-radius: 9999px;
+      flex-shrink: 0;
+    }
+
+    .line-north {
+      background: var(--accent-red);
+      border-top: 2px dashed var(--accent-red);
+      height: 2px;
+    }
+
+    .line-qibla {
+      background: var(--accent-green);
+      height: 4px;
+    }
+
+    .line-sun {
+      background: var(--accent-amber);
+      border-top: 2px dotted var(--accent-amber);
+      height: 2px;
+    }
+
+    .line-shadow {
+      background: #334155;
+      height: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    /* Map Control Overlay Buttons */
+    .map-controls-overlay {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .map-btn {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      color: var(--text-main);
+      transition: all 0.2s ease;
+    }
+
+    .map-btn:hover {
+      background: #f8fafc;
+      color: var(--primary-teal);
+      transform: scale(1.05);
+    }
+
+    /* Technical Accordion Help Section */
+    .help-section {
+      background: var(--panel-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .help-header {
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 0.75rem;
+    }
+
+    .help-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--primary-teal);
+      margin-bottom: 0.25rem;
+    }
+
+    .help-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .accordion-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    details {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #ffffff;
+      transition: all 0.2s;
+    }
+
+    details[open] {
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 8px rgba(10, 72, 95, 0.05);
+    }
+
+    summary {
+      padding: 0.85rem 1.15rem;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      background: #f8fafc;
+      color: var(--text-main);
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    summary::after {
+      content: '+';
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary-teal);
+      margin-right: auto;
+      margin-left: 0;
+      font-family: monospace;
+    }
+
+    details[open] summary::after {
+      content: '−';
+    }
+
+    .accordion-content {
+      padding: 1.2rem 1.25rem;
+      font-size: 0.85rem;
+      line-height: 1.75;
+      color: #334155;
+      border-top: 1px solid var(--border-color);
+      background: #ffffff;
+    }
+
+    .formula-box {
+      background: #f1f5f9;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      margin: 0.75rem 0;
+      direction: ltr;
+      text-align: left;
+      border-left: 4px solid var(--primary-teal);
+    }
+
+    /* Footer - Sleek, Uniform Typography Without Bolding */
+    #app-footer {
+      border-top: 1px solid var(--border-color);
+      background: #ffffff;
+      padding: 1.5rem 1.25rem;
+      margin-top: 2rem;
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .footer-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .footer-subtext {
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .footer-credit-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .footer-author-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--primary-teal);
+      font-weight: 400;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .footer-author-link:hover {
+      color: var(--accent-terracotta);
+      text-decoration: underline;
+    }
+
+    /* iOS PWA Install Guide Modal */
+    .ios-pwa-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .ios-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .ios-modal-card {
+      position: relative;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 1.4rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: var(--shadow-floating);
+      border: 1px solid var(--border-color);
+      z-index: 1;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .ios-modal-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.15rem;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 0.85rem;
+    }
+
+    .ios-app-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      flex-shrink: 0;
+    }
+
+    .ios-modal-close {
+      margin-right: auto;
+      background: #f1f5f9;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .ios-modal-close:hover {
+      background: #e2e8f0;
+      color: var(--text-main);
+    }
+
+    .ios-modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .ios-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--text-main);
+      background: #f8fafc;
+      padding: 0.75rem 0.85rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-light);
+    }
+
+    .ios-step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--primary-teal);
+      color: #ffffff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* Mobile Touch Targets Optimization */
+    @media (max-width: 768px) {
+      .btn, .select-input, .date-input, .city-chip, .layer-pill-btn {
+        min-height: 44px;
+      }
+      .city-chip {
+        padding: 0.5rem 0.95rem;
+      }
+    }
+
+    /* Custom Map Markers */
+    .custom-kaaba-marker {
+      background: #0f172a;
+      color: #f59e0b;
+      border: 2px solid #f59e0b;
+      border-radius: 6px;
+      width: 32px !important;
+      height: 32px !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .custom-user-marker {
+      background: var(--primary-teal);
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      width: 20px !important;
+      height: 20px !important;
+      box-shadow: 0 0 0 4px rgba(10, 72, 95, 0.35);
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #0f172a;
+      color: #ffffff;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', 'Vazirmatn', monospace;
+      box-shadow: var(--shadow-floating);
+      z-index: 9999;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Main Dashboard -->
+  <main>
+    <div class="dashboard-grid">
+
+      <!-- Controls Area (Desktop Multi-Column: Right Controls & Results) -->
+      <div class="controls-area">
+
+        <!-- Column 1: Brand Header, Geolocation, Simplified Calendar, Time Simulation -->
+        <div class="controls-col">
+
+          <!-- Brand Card (Header relocated to right column, compact, non-sticky, consistent theme) -->
+          <section class="card brand-card" id="brand-card">
+            <div class="brand-card-inner">
+              <div class="brand-card-icon" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                </svg>
+              </div>
+              <div class="brand-card-info">
+                <h1 class="brand-card-title">محاسبه‌گر جهت قبله و تراز سایه خورشید</h1>
+                <p class="brand-card-subtitle">بردار قبله، اوقات شرعی و امتداد سایه شاخص با مثلثات کروی</p>
+              </div>
+            </div>
+            <div style="margin-top:0.75rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.4rem; border-top:1px solid var(--border-light); padding-top:0.6rem;">
+              <span class="badge-mini" style="background:rgba(10,72,95,0.08); color:var(--primary-teal);">دقت نجومی ژئودتیک</span>
+              <button type="button" class="btn-pwa-install" id="btn-install-app" title="نصب این سامانه به عنوان وب‌اپلیکیشن در گوشی و دسکتاپ">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>نصب در گوشی (PWA)</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Card 1: Geolocation & Search -->
+          <section class="card" id="search-card">
+            <span class="card-label-tech">GEO-TELEMETRY // INPUT MODE</span>
+            <h2 class="card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              جستجوی موقعیت و مختصات
+            </h2>
+
+            <div class="search-row">
+              <div class="search-input-wrapper">
+                <input type="text" id="city-search" class="search-input" placeholder="جستجوی نام شهر یا کشور (مثلا تهران، مشهد...)" autocomplete="off" />
+                <div class="search-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
+                <div class="search-results" id="search-results-dropdown"></div>
+              </div>
+              <button class="btn btn-primary" id="btn-search" title="جستجو">
+                <span>بیاب</span>
+              </button>
+              <button class="btn btn-outline" id="btn-gps" title="دریافت مکان فعلی از GPS">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line></svg>
+                <span>GPS</span>
+              </button>
+            </div>
+
+            <div class="preset-cities">
+              <span style="font-size:0.72rem; color:var(--text-muted); align-self:center;">شهرهای منتخب:</span>
+              <button type="button" class="city-chip" data-lat="35.6892" data-lon="51.3890" data-name="تهران">تهران</button>
+              <button type="button" class="city-chip" data-lat="36.2972" data-lon="59.6067" data-name="مشهد">مشهد</button>
+              <button type="button" class="city-chip" data-lat="32.6546" data-lon="51.6680" data-name="اصفهان">اصفهان</button>
+              <button type="button" class="city-chip" data-lat="29.5918" data-lon="52.5837" data-name="شیراز">شیراز</button>
+              <button type="button" class="city-chip" data-lat="38.0800" data-lon="46.2919" data-name="تبریز">تبریز</button>
+              <button type="button" class="city-chip" data-lat="34.6416" data-lon="50.8746" data-name="قم">قم</button>
+              <button type="button" class="city-chip" data-lat="32.0261" data-lon="44.3463" data-name="نجف">نجف</button>
+              <button type="button" class="city-chip" data-lat="32.6160" data-lon="44.0249" data-name="کربلا">کربلا</button>
+              <button type="button" class="city-chip" data-lat="41.0082" data-lon="28.9784" data-name="استانبول">استانبول</button>
+            </div>
+
+            <div class="coords-bar">
+              <div class="coords-item">
+                <span class="coords-label">عرض جغرافیایی (LAT)</span>
+                <span class="coords-value latin-num" id="display-lat">35.689200° N</span>
+              </div>
+              <div class="coords-item">
+                <span class="coords-label">طول جغرافیایی (LON)</span>
+                <span class="coords-value latin-num" id="display-lon">51.389000° E</span>
+              </div>
+              <div class="coords-item" style="grid-column: span 2; display:flex; flex-direction:row; justify-content:space-between; align-items:center; background:rgba(240,77,35,0.04); border-color:rgba(240,77,35,0.18);">
+                <span class="coords-label" style="margin:0; color:var(--accent-terracotta);">مختصات کعبه مشرفه:</span>
+                <span class="coords-value latin-num" style="color:var(--accent-terracotta); font-size:0.78rem;">21.422487° N, 39.826206° E</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Card 2: Dual-Calendar System (Simplified to Month & Day) -->
+          <section class="card" id="calendar-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem;">
+              <span class="card-label-tech">ASTRONOMIC TIME & CALENDAR</span>
+              <span class="badge-mini" id="j-year-tag">تقویم خورشیدی</span>
+            </div>
+            <h2 class="card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              انتخاب تاریخ (ماه و روز)
+            </h2>
+
+            <div class="calendar-tabs">
+              <button type="button" class="calendar-tab active" id="tab-jalali">تقویم خورشیدی (جلالی)</button>
+              <button type="button" class="calendar-tab" id="tab-gregorian">تقویم میلادی (Gregorian)</button>
+            </div>
+
+            <!-- Jalali Controls (Simplified Month & Day Only) -->
+            <div id="jalali-controls" class="calendar-controls">
+              <input type="hidden" id="j-year" value="1403" />
+              <select id="j-month" class="select-input" aria-label="ماه شمسی">
+                <option value="1">فروردین</option>
+                <option value="2">اردیبهشت</option>
+                <option value="3">خرداد</option>
+                <option value="4">تیر</option>
+                <option value="5">مرداد</option>
+                <option value="6">شهریور</option>
+                <option value="7">مهر</option>
+                <option value="8">آبان</option>
+                <option value="9">آذر</option>
+                <option value="10">دی</option>
+                <option value="11">بهمن</option>
+                <option value="12">اسفند</option>
+              </select>
+              <select id="j-day" class="select-input" aria-label="روز شمسی"></select>
+              <button type="button" class="btn btn-outline" id="btn-today" style="padding:0.45rem 0.75rem;">امروز</button>
+            </div>
+
+            <!-- Gregorian Controls -->
+            <div id="gregorian-controls" class="calendar-controls" style="display:none;">
+              <input type="date" id="g-date-input" class="date-input" aria-label="تاریخ میلادی" />
+              <button type="button" class="btn btn-outline" id="btn-today-g" style="padding:0.45rem 0.75rem;">امروز</button>
+            </div>
+
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.6rem; display:flex; justify-content:space-between;">
+              <span>تاریخ متناظر:</span>
+              <span class="latin-num" id="converted-date-label">--</span>
+            </div>
+          </section>
+
+          <!-- Card 3: Time Simulation Slider & Dual Telemetry Readout -->
+          <section class="card time-slider-card" id="time-slider-card">
+            <span class="card-label-tech">CHRONO-SIMULATION // TELEMETRY</span>
+            
+            <div class="time-dual-telemetry">
+              <div class="time-telemetry-item" title="ساعت واقعی و لحظه‌ای در موقعیت جغرافیایی انتخابی">
+                <span class="time-telemetry-label" id="time-telemetry-live-label">زمان زنده موقعیت:</span>
+                <span class="time-telemetry-val latin-num" id="time-live-now-display">--:--:--</span>
+                <span class="time-telemetry-sub latin-num" id="clock-live-text" style="font-size:0.68rem; color:var(--text-muted); margin-top:2px;">--</span>
+              </div>
+              <div class="time-telemetry-item active-target" title="ساعت مبنای محاسبات فعلی قبله و خورشید">
+                <span class="time-telemetry-label">لحظه محاسبه قبله:</span>
+                <span class="time-telemetry-val latin-num" id="sim-time-text">12:00</span>
+                <span class="time-telemetry-sub latin-num" id="calc-moment-text" style="font-size:0.68rem; color:var(--accent-terracotta); font-weight:700; margin-top:2px;">--</span>
+              </div>
+            </div>
+
+            <input type="range" id="time-slider" class="time-slider" min="0" max="1439" value="720" step="1" />
+            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.72rem; color:var(--text-muted); margin-top:0.35rem;">
+              <span>00:00 (نیمه‌شب)</span>
+              <button type="button" id="btn-reset-time" class="btn-sync-time" title="هماهنگ‌سازی ساعت و تاریخ به لحظه کنونی">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                <span>همگام با الان</span>
+              </button>
+              <span>23:59</span>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- Column 2: Results, Ephemeris Alignment, Prayer Times -->
+        <div class="controls-col">
+
+          <!-- Card 4: Astronomical Calculations Results -->
+          <section class="card" id="results-card">
+            <span class="card-label-tech">SPHERICAL TRIGONOMETRY VECTORS</span>
+            <h2 class="card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+              نتایج محاسبات زاویه و فاصله
+            </h2>
+
+            <div class="metrics-grid">
+              <div class="metric-box highlight">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span class="metric-label">زاویه دقیق قبله (AZIMUTH)</span>
+                  <span class="latin-num" id="val-qibla-cardinal" style="font-size:0.7rem; font-weight:700; color:var(--accent-terracotta);">SW</span>
+                </div>
+                <div class="metric-val terracotta">
+                  <span class="latin-num" id="val-qibla-deg">218.43</span>°
+                </div>
+                <div class="angle-progress-wrapper">
+                  <div class="angle-progress-bar" id="qibla-angle-bar" style="width: 60.6%;"></div>
+                </div>
+                <span class="metric-sub">نسبت به مبدأ شمال واقعی (۰.۰۰°)</span>
+              </div>
+
+              <div class="metric-box">
+                <span class="metric-label">فاصله تا کعبه مشرفه</span>
+                <div class="metric-val">
+                  <span class="latin-num" id="val-distance-km">1,945</span>
+                  <span style="font-size:0.8rem; font-weight:600;">km</span>
+                </div>
+                <span class="metric-sub">محاسبه برداری هاروسین (R=6371km)</span>
+              </div>
+
+              <div class="metric-box">
+                <span class="metric-label">راستای سایه شاخص (SHADOW)</span>
+                <div class="metric-val">
+                  <span class="latin-num" id="val-shadow-deg">--</span>
+                </div>
+                <span class="metric-sub" id="val-sun-status">وضعیت: در حال محاسبه</span>
+              </div>
+
+              <div class="metric-box">
+                <span class="metric-label">انحراف زاویه سایه و قبله</span>
+                <div class="metric-val">
+                  <span class="latin-num" id="val-diff-deg">--</span>
+                </div>
+                <span class="metric-sub" id="val-diff-status">انطباق در انتظار</span>
+              </div>
+            </div>
+
+            <!-- Compass Needle Visualizer -->
+            <div class="compass-card">
+              <div class="compass-dial" id="compass-dial">
+                <span style="position:absolute; top:2px; font-size:9px; font-weight:700; color:#ef4444; font-family:'JetBrains Mono',monospace;">N</span>
+                <span style="position:absolute; bottom:2px; font-size:9px; font-weight:700; color:#94a3b8; font-family:'JetBrains Mono',monospace;">S</span>
+                <span style="position:absolute; right:4px; font-size:9px; font-weight:700; color:#94a3b8; font-family:'JetBrains Mono',monospace;">E</span>
+                <span style="position:absolute; left:4px; font-size:9px; font-weight:700; color:#94a3b8; font-family:'JetBrains Mono',monospace;">W</span>
+                <div class="compass-needle" id="compass-needle">
+                  <div class="needle-north"></div>
+                  <div class="needle-south"></div>
+                </div>
+                <div class="compass-pin"></div>
+              </div>
+              <div class="compass-details">
+                <div style="font-size:0.82rem; font-weight:700; color:var(--primary-teal);">قطب‌نمای بصری قبله (COMPASS GAUGE)</div>
+                <div style="font-size:0.72rem; color:var(--text-muted);">عقربه سبز جهت بردار قبله را نسبت به شمال جغرافیایی (N) نشان می‌دهد.</div>
+              </div>
+            </div>
+
+            <!-- Night / Darkness Warning Notice -->
+            <div id="night-alert-banner" class="night-alert-banner" style="display: none;">
+              <div class="night-icon">🌙</div>
+              <div style="flex:1;">
+                <div class="night-title" id="night-banner-title">عدم حضور خورشید در آسمان (شب و تاریکی)</div>
+                <p class="night-desc" id="night-banner-desc">
+                  در این لحظه خورشید در ارتفاع <span class="latin-num" id="night-sun-alt">--</span>° زیر افق قرار دارد؛ بنابراین سایه فیزیکی بر روی زمین تشکیل نمی‌شود و انطباق سایه بی‌معناست. 
+                  با این حال، <strong>جهت ریاضی قبله (بردار سبز) با دقت ۱۰۰٪ معتبر است</strong>.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Card 5: Daily Alignment Finder -->
+          <section class="card alignment-card" id="alignment-card">
+            <span class="card-label-tech" style="color:var(--primary-teal);">SOLAR EPHEMERIS ALIGNMENT</span>
+            <h2 class="card-title" style="color:var(--primary-teal); border-bottom-color:rgba(10, 72, 95, 0.15);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              تراز سایه شاخص با جهت قبله
+            </h2>
+            <p style="font-size:0.76rem; color:var(--text-muted); line-height:1.5;">
+              پایش موقعیت خورشید در طول روز برای تعیین لحظه دقیقی که امتداد سایه شاخص قائم با خط قبله تراز می‌شود:
+            </p>
+
+            <div class="alignment-status" id="alignment-status-box">
+              <div class="status-dot amber" id="align-dot"></div>
+              <div style="flex:1;">
+                <div style="font-weight:700; font-size:0.86rem; color:var(--primary-teal); font-family:'JetBrains Mono','Vazirmatn',monospace;" id="align-time-result">در حال اسکن موقعیت خورشید...</div>
+                <div style="font-size:0.72rem; color:var(--text-muted);" id="align-detail-result">دقت زاویه و افق خورشید</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Card 6: Islamic Prayer Times -->
+          <section class="card prayer-card" id="prayer-times-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+              <span class="card-label-tech">PRAYER EPHEMERIS // 1-MIN PRECISION</span>
+              <span class="badge-mini" id="prayer-city-badge">موقعیت فعلی</span>
+            </div>
+            <h2 class="card-title" style="margin-bottom:0.45rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0 7 7c0 7-7 13-7 13S5 16 5 9a7 7 0 0 1 14 0z"></path><circle cx="12" cy="9" r="2.5"></circle></svg>
+              اوقات شرعی در موقعیت انتخاب شده
+            </h2>
+            <p style="font-size:0.74rem; color:var(--text-muted); margin-bottom:0.5rem; line-height:1.5;">
+              محاسبه دقیق اوقات شرعی براساس مختصات مکانی با دقت ۱ دقیقه:
+            </p>
+
+            <div class="prayer-grid" id="prayer-times-grid">
+              <div class="prayer-cell" id="cell-fajr" title="اذان صبح">
+                <div class="prayer-label-row">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><path d="M12 2v4M4.93 4.93l2.83 2.83M2 12h4M4.93 19.07l2.83-2.83"></path><path d="M16 12a4 4 0 0 1-8 0"></path><line x1="2" y1="20" x2="22" y2="20"></line></svg>
+                  <span>اذان صبح</span>
+                </div>
+                <strong class="prayer-time-val latin-num" id="pt-fajr">--:--</strong>
+              </div>
+
+              <div class="prayer-cell" id="cell-sunrise" title="طلوع آفتاب">
+                <div class="prayer-label-row">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M17 18a5 5 0 0 0-10 0"></path><line x1="12" y1="2" x2="12" y2="9"></line><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line><line x1="1" y1="18" x2="3" y2="18"></line><line x1="21" y1="18" x2="23" y2="18"></line><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line><line x1="23" y1="22" x2="1" y2="22"></line></svg>
+                  <span>طلوع</span>
+                </div>
+                <strong class="prayer-time-val latin-num" id="pt-sunrise">--:--</strong>
+              </div>
+
+              <div class="prayer-cell" id="cell-dhuhr" title="اذان ظهر شرعی">
+                <div class="prayer-label-row">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line></svg>
+                  <span>اذان ظهر</span>
+                </div>
+                <strong class="prayer-time-val latin-num" id="pt-dhuhr">--:--</strong>
+              </div>
+
+              <div class="prayer-cell" id="cell-asr" title="اذان عصر">
+                <div class="prayer-label-row">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2"></path></svg>
+                  <span>اذان عصر</span>
+                </div>
+                <strong class="prayer-time-val latin-num" id="pt-asr">--:--</strong>
+              </div>
+
+              <div class="prayer-cell" id="cell-maghrib" title="اذان مغرب">
+                <div class="prayer-label-row">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M17 18a5 5 0 0 0-10 0"></path><line x1="12" y1="9" x2="12" y2="2"></line><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"></line><line x1="1" y1="18" x2="3" y2="18"></line><line x1="21" y1="18" x2="23" y2="18"></line><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"></line><line x1="23" y1="22" x2="1" y2="22"></line></svg>
+                  <span>اذان مغرب</span>
+                </div>
+                <strong class="prayer-time-val latin-num" id="pt-maghrib">--:--</strong>
+              </div>
+
+              <div class="prayer-cell" id="cell-isha" title="اذان عشا">
+                <div class="prayer-label-row">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                  <span>اذان عشا</span>
+                </div>
+                <strong class="prayer-time-val latin-num" id="pt-isha">--:--</strong>
+              </div>
+
+              <div class="prayer-cell cell-midnight" id="cell-midnight" title="نیمه‌شب شرعی">
+                <div class="prayer-label-row">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  <span>نیمه شب شرعی</span>
+                </div>
+                <strong class="prayer-time-val latin-num" id="pt-midnight">--:--</strong>
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+      </div>
+
+      <!-- Map Canvas (Sticky on Desktop) -->
+      <section class="map-wrapper" id="map-container">
+        <div id="map"></div>
+
+        <!-- On-Map Layer Selector (Street vs Satellite) & Touch Interaction Mode -->
+        <div class="map-layer-switch" role="group" aria-label="تنظیمات نمایش و لمس نقشه">
+          <button type="button" class="layer-pill-btn active" id="btn-layer-street" title="نمایش نقشه استاندارد خیابان">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <span>نقشه خیابان</span>
+          </button>
+          <button type="button" class="layer-pill-btn" id="btn-layer-sat" title="نمایش تصاویر ماهواره‌ای باکیفیت">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20M2 12h20"/></svg>
+            <span>تصویر ماهواره‌ای</span>
+          </button>
+          <button type="button" class="layer-pill-btn" id="btn-touch-mode" title="تغییر نحوه لمس نقشه در گوشی (دو انگشتی با اسکرول آزاد / تک‌انگشتی)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
+            <span id="touch-mode-label">لمس: ۲ انگشتی</span>
+          </button>
+        </div>
+
+        <!-- Touch Gesture Helper Overlay -->
+        <div id="map-gesture-overlay" class="map-gesture-overlay" aria-live="polite">
+          برای جابه‌جایی نقشه از دو انگشت استفاده کنید
+        </div>
+
+        <!-- Night Indicator on Map (visible when sun is below horizon) -->
+        <div id="map-night-indicator" class="map-night-badge" style="display: none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+          <span id="map-night-text">حالت شب (خورشید زیر افق)</span>
+        </div>
+
+        <!-- On-Map Floating Legend -->
+        <div class="map-legend">
+          <div class="legend-title">
+            <span>راهنمای بردارهای نقشه</span>
+            <span style="font-size:0.65rem; color:var(--primary-teal); font-weight:700; font-family:'JetBrains Mono',monospace;">VECTOR TELEMETRY</span>
+          </div>
+          <div class="legend-items">
+            <div class="legend-row">
+              <div class="legend-line line-north"></div>
+              <span>شمال جغرافیایی واقعی (<span class="latin-num">0.00°</span>)</span>
+            </div>
+            <div class="legend-row">
+              <div class="legend-line line-qibla"></div>
+              <span>امتداد مستقیم قبله (<span class="latin-num" id="legend-qibla-deg">218.43°</span>)</span>
+            </div>
+            <div class="legend-row">
+              <div class="legend-line line-sun"></div>
+              <span>راستای تابش خورشید (<span class="latin-num" id="legend-sun-deg">--</span>°)</span>
+            </div>
+            <div class="legend-row">
+              <div class="legend-line line-shadow"></div>
+              <span>راستای سایه شاخص (<span class="latin-num" id="legend-shadow-deg">--</span>°)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- On-Map Control Overlays -->
+        <div class="map-controls-overlay">
+          <button type="button" class="map-btn" id="btn-recenter" title="مرکز نقشه روی موقعیت من">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polygon points="12 2 15 8 22 9 17 14 18 21 12 17 6 21 7 14 2 9 9 8 12 2"></polygon></svg>
+          </button>
+          <button type="button" class="map-btn" id="btn-fit-all" title="نمایش همزمان موقعیت و کعبه">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Persian-Only Guide & Documentation Section -->
+    <section class="help-section" id="help-accordion-section">
+      <div class="help-header">
+        <h2 class="help-title">راهنمای جامع، آموزش استفاده و مبانی علمی سامانه</h2>
+        <p class="help-desc">معرفی قابلیت‌های سامانه، آموزش گام‌به‌گام و آسان قبله‌یابی فیزیکی با شاخص، و خلاصه فرمول‌های نجومی و ریاضی</p>
+      </div>
+
+      <div class="accordion-group" id="help-accordion-group">
+
+        <!-- 1. What the app does (این برنامه دقیقاً چه کارهایی انجام می‌دهد؟) -->
+        <details id="help-capabilities" open>
+          <summary>۱. این برنامه دقیقاً چه کارهایی انجام می‌دهد؟ (معرفی شفاف قابلیت‌ها)</summary>
+          <div class="accordion-content">
+            <p>این سامانه یک ابزار مهندسی و نجومی جامع برای قبله‌یابی دقیق، رصد خورشیدی و محاسبه اوقات شرعی است که کارهای زیر را با بالاترین دقت انجام می‌دهد:</p>
+            <ul style="margin: 0.75rem 1.25rem 0.5rem 0; line-height: 1.85; list-style-type: disc;">
+              <li><strong>محاسبه دقیق جهت قبله:</strong> تعیین زاویه دقیق رو به کعبه مشرفه نسبت به شمال واقعی جغرافیایی با دقت زیر ۰.۰۱ درجه از هر نقطه دلخواه در کره زمین.</li>
+              <li><strong>تعیین زمان انطباق سایه شاخص با قبله (قبله‌یابی بدون قطب‌نما):</strong> قطب‌نماهای گوشی‌های هوشمند به دلیل تداخل امواج، سازه‌های بتنی و فلزی ساختمان و کالیبره نبودن سنسور، معمولاً بین ۵ تا ۳۰ درجه خطا دارند. این سامانه مسیر خورشید را ثانیه‌به‌ثانیه اسکن می‌کند و به شما اعلام می‌کند در چه ثانیه‌ای از روز، سایه یک میله عمودی صاف دقیقاً بر خط قبله منطبق می‌شود تا بدون نیاز به قطب‌نما، قبله را به صورت فیزیکی و با دقت مطلق پیدا کنید.</li>
+              <li><strong>محاسبه اوقات شرعی با دقت ۱ دقیقه:</strong> محاسبه اذان صبح، طلوع آفتاب، اذان ظهر شرعی، اذان عصر، غروب آفتاب، اذان مغرب، اذان عشا و نیمه‌شب شرعی براساس دقیق‌ترین فرمول‌های نجومی متناسب با موقعیت مکانی شما.</li>
+              <li><strong>نقشه تعاملی دومنظوره (شهری و ماهواره‌ای):</strong> امکان جابه‌جایی نشانگر، جستجوی شهرها یا کلیک روی هر نقطه جهان، همراه با خطوط برداری شمال جغرافیایی، امتداد مستقیم قبله، راستای تابش خورشید و راستای سایه شاخص.</li>
+              <li><strong>محاسبه کوتاه‌ترین فاصله ژئودتیک تا کعبه:</strong> محاسبه فاصله حقیقی هوایی روی انحنای کره زمین بر حسب کیلومتر با بالاترین استانداردهای ژئودزی.</li>
+              <li><strong>شبیه‌ساز زنده زمان و تقویم:</strong> امکان انتخاب هر ماه و روز از سال و جابه‌جایی ساعت و دقیقه با اسلایدر زمان برای مشاهده موقعیت خورشید و زاویه سایه در هر زمان دلخواه.</li>
+            </ul>
+          </div>
+        </details>
+
+        <!-- 2. How to use (چگونه از این برنامه استفاده کنیم؟) -->
+        <details id="help-usage">
+          <summary>۲. چگونه از این برنامه استفاده کنیم؟ (راهنمای گام‌به‌گام و ساده)</summary>
+          <div class="accordion-content">
+            <p>استفاده از سامانه در ۴ مرحله ساده انجام می‌شود:</p>
+            <ol style="margin: 0.75rem 1.25rem 0.5rem 0; line-height: 1.85; list-style-type: decimal;">
+              <li><strong>گام اول: تعیین موقعیت مکانی شما</strong>
+                <br>ساده‌ترین راه زدن دکمه <strong>GPS</strong> است تا موقعیت فعلی‌تان فوراً دریافت شود. همچنین می‌توانید یکی از <strong>شهرهای منتخب</strong> را انتخاب کنید، نام شهر یا محله‌تان را در کادر <strong>جستجو</strong> تایپ نمایید یا مستقیماً روی <strong>نقشه</strong> کلیک کنید.
+              </li>
+              <li><strong>گام دوم: تنظیم تاریخ و زمان</strong>
+                <br>تقویم شمسی روی سال جاری تنظیم است؛ کافی است <strong>ماه و روز</strong> مورد نظر را مشخص کنید. با اسلایدر زمان می‌توانید ساعات مختلف روز را شبیه‌سازی نمایید یا با زدن دکمه «هماهنگی با زمان کنونی» به لحظه حال برگردید.
+              </li>
+              <li><strong>گام سوم: مشاهده جهت قبله و زمان تراز سایه</strong>
+                <br>در کارت تله‌متری، زاویه قبله (برحسب درجه نسبت به شمال در جهت عقربه‌های ساعت) و فاصله تا کعبه را بخوانید. در بخش <strong>«تراز سایه شاخص با جهت قبله»</strong>، ساعت و دقیقه دقیق انطباق سایه (مثلاً <span class="latin-num">11:45:12</span>) را مشاهده کنید.
+              </li>
+              <li><strong>گام چهارم: تعیین فیزیکی قبله با شاخص (روش قطعی و بسیار دقیق)</strong>
+                <br>در ساعت اعلام‌شده در گام قبل، یک میله یا خط‌کش صاف را کاملاً عمود بر زمین تراز قرار دهید. در این لحظه، امتداد سایه شاخص دقیقاً به سمت قبله (کعبه مشرفه) است؛ کافی است خط سایه را روی زمین علامت بزنید.
+              </li>
+            </ol>
+          </div>
+        </details>
+
+        <!-- 3. Brief formulas (خلاصه مختصر فرمول‌های ریاضی و نجومی) -->
+        <details id="help-formulas">
+          <summary>۳. خلاصه مختصر فرمول‌های ریاضی و نجومی (برای علاقه‌مندان)</summary>
+          <div class="accordion-content">
+            <p><strong>الف) محاسبه زاویه جهت قبله (Great-Circle Bearing):</strong></p>
+            <p>مختصات کعبه مشرفه برابر با <span class="latin-num">φ_K = 21.422487° N</span> و <span class="latin-num">λ_K = 39.826206° E</span> است. زاویه قبله نسبت به شمال جغرافیایی با تابع آرک‌تانژانت دو متغیره محاسبه می‌شود:</p>
+            <div class="formula-box">
+              Δλ = λ_K - λ_Observer<br>
+              y = sin(Δλ)<br>
+              x = cos(φ_Observer) * tan(φ_K) - sin(φ_Observer) * cos(Δλ)<br>
+              Qibla_Bearing = (atan2(y, x) * 180 / π + 360) % 360
+            </div>
+
+            <p><strong>ب) محاسبه فاصله ژئودتیک تا کعبه (Haversine Formula):</strong></p>
+            <p>کوتاه‌ترین مسافت بر روی کره زمین با شعاع میانگین <span class="latin-num">R = 6371 km</span> به صورت زیر محاسبه می‌شود:</p>
+            <div class="formula-box">
+              a = sin²(Δφ/2) + cos(φ1) * cos(φ2) * sin²(Δλ/2)<br>
+              c = 2 * atan2(√a, √(1-a))<br>
+              Distance = 6371 * c (km)
+            </div>
+
+            <p><strong>ج) رابطه زاویه سایه شاخص با خورشید:</strong></p>
+            <p>سایه یک شاخص قائم، همواره در جهت مخالف سمت خورشید (+۱۸۰ درجه) تشکیل می‌شود:</p>
+            <div class="formula-box">
+              Shadow_Bearing = (Sun_Azimuth + 180°) % 360
+            </div>
+            <p>هرگاه این زاویه با زاویه قبله برابر شود، امتداد سایه شاخص، جهت مستقیم قبله را روی زمین نشان می‌دهد.</p>
+
+            <p><strong>د) پدیده تعامد سالانه خورشید بر کعبه:</strong></p>
+            <p>دو بار در سال (حدود ۷ خرداد ساعت ۱۲:۴۸ و ۲۵ تیر ساعت ۱۲:۵۷ به وقت ایران)، میل خورشید دقیقاً با عرض جغرافیایی کعبه برابر شده و خورشید در ظهر شرعی مکه مستقیماً بر بالای کعبه عمود می‌تابد؛ در این دو لحظه، نگاه به سوی خورشید در تمام مناطق روز زمین، جهت مستقیم قبله است.</p>
+          </div>
+        </details>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast Notification element -->
+  <div id="toast" role="alert">پیام سیستم</div>
+
+  <!-- Footer -->
+  <footer id="app-footer">
+    <div class="footer-inner">
+      <p class="footer-subtext">
+        سامانه تخصصی تعیین جهت قبله، رصد تراز خورشیدی و محاسبه دقیق اوقات شرعی بر پایه مختصات مکانی
+      </p>
+      <div class="footer-credit-line">
+        <span>ساخته شده توسط</span>
+        <a href="https://xanmo.com" target="_blank" rel="noopener noreferrer" class="footer-author-link" title="وب‌سایت شخصی حسین خان محمدی">
+          <span>حسین خان محمدی</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- iOS PWA Install Guide Modal -->
+  <div id="ios-pwa-modal" class="ios-pwa-modal" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="ios-modal-title">
+    <div class="ios-modal-backdrop" id="ios-modal-backdrop"></div>
+    <div class="ios-modal-card">
+      <div class="ios-modal-header">
+        <div class="ios-app-icon">
+          <img src="/icon.svg" width="44" height="44" alt="آیکون قبله‌یاب" />
+        </div>
+        <div>
+          <h3 id="ios-modal-title" style="font-size:0.95rem; font-weight:700; color:var(--text-main);">افزودن قبله‌یاب به صفحه اصلی آیفون</h3>
+          <p style="font-size:0.75rem; color:var(--text-muted);">نصب آسان به عنوان وب‌اپلیکیشن مستقل</p>
+        </div>
+        <button type="button" id="btn-close-ios-modal" class="ios-modal-close" aria-label="بستن">✕</button>
+      </div>
+      <div class="ios-modal-body">
+        <div class="ios-step">
+          <span class="ios-step-num">۱</span>
+          <span>در نوار پایین مرورگر سافاری روی دکمه <strong>اشتراک‌گذاری (Share <svg style="display:inline-block;vertical-align:middle;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>)</strong> ضربه بزنید.</span>
+        </div>
+        <div class="ios-step">
+          <span class="ios-step-num">۲</span>
+          <span>در منوی بازشده به پایین اسکرول کنید و گزینه <strong>«Add to Home Screen» (افزودن به صفحه اصلی <svg style="display:inline-block;vertical-align:middle;" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>)</strong> را انتخاب نمایید.</span>
+        </div>
+        <div class="ios-step">
+          <span class="ios-step-num">۳</span>
+          <span>در گوشه بالای راست روی <strong>Add</strong> بزنید تا آیکون برنامه در کنار سایر برنامه‌های گوشی شما قرار گیرد.</span>
+        </div>
+      </div>
+      <button type="button" class="btn btn-primary" id="btn-done-ios-modal" style="width:100%; justify-content:center; margin-top:1rem;">متوجه شدم</button>
+    </div>
+  </div>
+
+  <!-- Application Logic (Vanilla JS ES6+) -->
+  <script>
+    (function () {
+      'use strict';
+
+      // --- 1. Constants & Coordinates ---
+      const KAABA_LAT = 21.422487;
+      const KAABA_LON = 39.826206;
+      const EARTH_RADIUS_KM = 6371;
+
+      // App State
+      const state = {
+        lat: 35.6892,
+        lon: 51.3890,
+        city: 'تهران',
+        selectedDate: new Date(),
+        simTimeMinutes: (new Date().getHours() * 60) + new Date().getMinutes(),
+        calendarMode: 'jalali',
+        mapLayerMode: 'street',
+        map: null,
+        layers: {
+          street: null,
+          satellite: null
+        },
+        userMarker: null,
+        kaabaMarker: null,
+        lines: {
+          north: null,
+          qibla: null,
+          sun: null,
+          shadow: null,
+          geodesicToKaaba: null
+        }
+      };
+
+      // Fix Leaflet Default Icon Paths for CDNs
+      delete L.Icon.Default.prototype._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+      });
+
+      // Custom Leaflet Icons
+      const kaabaIcon = L.divIcon({
+        className: 'custom-kaaba-marker',
+        html: '🕋',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16]
+      });
+
+      const userIcon = L.divIcon({
+        className: 'custom-user-marker',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+        popupAnchor: [0, -10]
+      });
+
+      // --- 2. Spherical Trigonometry & Astronomical Math ---
+
+      // Degrees to Radians
+      function toRad(deg) {
+        return (deg * Math.PI) / 180;
+      }
+
+      // Radians to Degrees
+      function toDeg(rad) {
+        return (rad * 180) / Math.PI;
+      }
+
+      // Great-Circle Qibla Bearing (from North clockwise: 0-360)
+      function calculateQiblaBearing(lat, lon) {
+        const phi1 = toRad(lat);
+        const phi2 = toRad(KAABA_LAT);
+        const deltaLambda = toRad(KAABA_LON - lon);
+
+        const y = Math.sin(deltaLambda);
+        const x = Math.cos(phi1) * Math.tan(phi2) - Math.sin(phi1) * Math.cos(deltaLambda);
+
+        let theta = toDeg(Math.atan2(y, x));
+        theta = (theta + 360) % 360;
+        return theta;
+      }
+
+      // Haversine Distance to Kaaba
+      function calculateHaversineDistance(lat, lon) {
+        const phi1 = toRad(lat);
+        const phi2 = toRad(KAABA_LAT);
+        const deltaPhi = toRad(KAABA_LAT - lat);
+        const deltaLambda = toRad(KAABA_LON - lon);
+
+        const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                  Math.cos(phi1) * Math.cos(phi2) *
+                  Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return EARTH_RADIUS_KM * c;
+      }
+
+      // Compute destination point given start point, bearing, and distance (km)
+      function computeDestinationPoint(lat, lon, bearingDeg, distanceKm) {
+        if (isNaN(lat) || isNaN(lon) || isNaN(bearingDeg) || isNaN(distanceKm)) {
+          return [lat || 0, lon || 0];
+        }
+        const delta = distanceKm / EARTH_RADIUS_KM;
+        const theta = toRad(bearingDeg);
+        const phi1 = toRad(lat);
+        const lambda1 = toRad(lon);
+
+        const phi2 = Math.asin(
+          Math.sin(phi1) * Math.cos(delta) +
+          Math.cos(phi1) * Math.sin(delta) * Math.cos(theta)
+        );
+
+        const lambda2 = lambda1 + Math.atan2(
+          Math.sin(theta) * Math.sin(delta) * Math.cos(phi1),
+          Math.cos(delta) - Math.sin(phi1) * Math.sin(phi2)
+        );
+
+        const resLat = toDeg(phi2);
+        const resLon = toDeg(lambda2);
+        if (isNaN(resLat) || isNaN(resLon)) {
+          return [lat, lon];
+        }
+        return [resLat, resLon];
+      }
+
+      // Convert SunCalc Azimuth (from South) to Geographic Bearing (from North: 0°=N, 90°=E, 180°=S, 270°=W)
+      function sunAzimuthToBearing(azimuthRad) {
+        if (isNaN(azimuthRad)) return 0;
+        let bearing = (toDeg(azimuthRad) + 180 + 360) % 360;
+        return isNaN(bearing) ? 0 : bearing;
+      }
+
+      // Convert Degrees to Persian/English Cardinal Direction
+      function getCardinalDirection(deg) {
+        const directions = [
+          { name: 'شمال (N)', min: 348.75, max: 360 },
+          { name: 'شمال (N)', min: 0, max: 11.25 },
+          { name: 'شمال-شمال‌شرقی (NNE)', min: 11.25, max: 33.75 },
+          { name: 'شمال‌شرقی (NE)', min: 33.75, max: 56.25 },
+          { name: 'شرق-شمال‌شرقی (ENE)', min: 56.25, max: 78.75 },
+          { name: 'شرق (E)', min: 78.75, max: 101.25 },
+          { name: 'شرق-جنوب‌شرقی (ESE)', min: 101.25, max: 123.75 },
+          { name: 'جنوب‌شرقی (SE)', min: 123.75, max: 146.25 },
+          { name: 'جنوب-جنوب‌شرقی (SSE)', min: 146.25, max: 168.75 },
+          { name: 'جنوب (S)', min: 168.75, max: 191.25 },
+          { name: 'جنوب-جنوب‌غربی (SSW)', min: 191.25, max: 213.75 },
+          { name: 'جنوب‌غربی (SW)', min: 213.75, max: 236.25 },
+          { name: 'غرب-جنوب‌غربی (WSW)', min: 236.25, max: 258.75 },
+          { name: 'غرب (W)', min: 258.75, max: 281.25 },
+          { name: 'غرب-شمال‌غربی (WNW)', min: 281.25, max: 303.75 },
+          { name: 'شمال‌غربی (NW)', min: 303.75, max: 326.25 },
+          { name: 'شمال-شمال‌غربی (NNW)', min: 326.25, max: 348.75 }
+        ];
+        for (let d of directions) {
+          if (deg >= d.min && deg < d.max) return d.name;
+        }
+        return 'جنوب غربی (SW)';
+      }
+
+      // Format number to Persian/Latin with fixed decimals
+      function formatNum(num, dec = 2) {
+        return Number(num).toFixed(dec);
+      }
+
+      // --- 3. Timezone & Islamic Prayer Ephemeris Algorithm ---
+
+      // High-precision geographic timezone determination
+      function getTimezoneOffsetMinutes(lat, lon) {
+        // 1. Iran: UTC+3:30 (Permanent standard time, 210 min)
+        if (lat >= 24.0 && lat <= 40.5 && lon >= 44.0 && lon <= 63.5) {
+          return 210;
+        }
+        // 2. Turkey: UTC+3:00 (Permanent standard time, 180 min)
+        if (lat >= 35.8 && lat <= 42.5 && lon >= 25.5 && lon <= 45.0) {
+          return 180;
+        }
+        // 3. Iraq / Saudi Arabia (Mecca, Medina) / Kuwait / Qatar / Bahrain / Yemen / Syria / Jordan: UTC+3:00 (180 min)
+        if (lat >= 12.0 && lat <= 38.0 && lon >= 34.0 && lon <= 55.5) {
+          if (lat >= 21.5 && lat <= 26.5 && lon >= 51.5 && lon <= 60.0) {
+            return 240; // UAE & Oman: UTC+4:00
+          }
+          return 180;
+        }
+        // 4. UAE & Oman: UTC+4:00 (240 min)
+        if (lat >= 21.5 && lat <= 26.5 && lon >= 51.5 && lon <= 60.0) {
+          return 240;
+        }
+        // 5. Azerbaijan / Armenia / Georgia: UTC+4:00 (240 min)
+        if (lat >= 38.0 && lat <= 43.5 && lon >= 43.5 && lon <= 51.0) {
+          return 240;
+        }
+        // 6. Afghanistan: UTC+4:30 (270 min)
+        if (lat >= 29.0 && lat <= 38.5 && lon >= 60.5 && lon <= 75.0) {
+          return 270;
+        }
+        // 7. Pakistan: UTC+5:00 (300 min)
+        if (lat >= 23.5 && lat <= 37.0 && lon >= 60.5 && lon <= 77.0) {
+          return 300;
+        }
+        // 8. Egypt / Levant: UTC+3:00
+        if (lat >= 22.0 && lat <= 34.5 && lon >= 24.0 && lon <= 36.0) {
+          return 180;
+        }
+        // Fallback: Standard geographic solar timezone (each 15 degrees = 1 hour)
+        return Math.round(lon / 15) * 60;
+      }
+
+      // Calculate current real-time instant at the selected geographic coordinate
+      function getGeoNowDate(lat, lon) {
+        const utcNow = Date.now(); // Universal timestamp (ms since epoch UTC)
+        const offsetMin = getTimezoneOffsetMinutes(lat, lon);
+        const targetMs = utcNow + (offsetMin * 60 * 1000);
+        const d = new Date(targetMs);
+        return {
+          utcMs: utcNow,
+          localMs: targetMs,
+          year: d.getUTCFullYear(),
+          month: d.getUTCMonth() + 1,
+          day: d.getUTCDate(),
+          hours: d.getUTCHours(),
+          minutes: d.getUTCMinutes(),
+          seconds: d.getUTCSeconds(),
+          offsetMinutes: offsetMin
+        };
+      }
+
+      // Complete Islamic Prayer Times with 1-Minute Precision (Institute of Geophysics standard)
+      function calculatePrayerTimes(targetDate, lat, lon) {
+        const offsetMin = getTimezoneOffsetMinutes(lat, lon);
+        
+        const year = targetDate.getFullYear();
+        const month = targetDate.getMonth() + 1;
+        const day = targetDate.getDate();
+        
+        // Julian Day at 0h UT
+        const a = Math.floor((14 - month) / 12);
+        const y = year + 4800 - a;
+        const m = month + 12 * a - 3;
+        const jd = day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+        const T = (jd - 2451545.0) / 36525;
+        
+        let L0 = 280.46646 + T * (36000.76983 + 0.0003032 * T);
+        L0 = ((L0 % 360) + 360) % 360;
+        
+        const M = 357.52911 + T * (35999.05029 - 0.0001537 * T);
+        const Mrad = (M * Math.PI) / 180;
+        
+        const C = Math.sin(Mrad) * (1.914602 - T * (0.004817 + 0.000014 * T))
+                + Math.sin(2 * Mrad) * (0.019993 - 0.000101 * T)
+                + Math.sin(3 * Mrad) * 0.000289;
+                
+        const sunTrueLong = L0 + C;
+        const omega = 125.04 - 1934.136 * T;
+        const lambda = sunTrueLong - 0.00569 - 0.00478 * Math.sin((omega * Math.PI) / 180);
+        const lambdaRad = (lambda * Math.PI) / 180;
+        
+        const eps0 = 23 + (26 + (21.448 - T * (46.815 + T * (0.00059 - T * 0.001813))) / 60) / 60;
+        const eps = eps0 + 0.00256 * Math.cos((omega * Math.PI) / 180);
+        const epsRad = (eps * Math.PI) / 180;
+        
+        const declRad = Math.asin(Math.sin(epsRad) * Math.sin(lambdaRad));
+        const declDeg = (declRad * 180) / Math.PI;
+        
+        const yEoT = Math.tan(epsRad / 2) * Math.tan(epsRad / 2);
+        const L0rad = (L0 * Math.PI) / 180;
+        const eotRad = yEoT * Math.sin(2 * L0rad) - 2 * 0.016708634 * Math.sin(Mrad) + 4 * 0.016708634 * yEoT * Math.sin(Mrad) * Math.cos(2 * L0rad) - 0.5 * yEoT * yEoT * Math.sin(4 * L0rad) - 1.25 * 0.016708634 * 0.016708634 * Math.sin(2 * Mrad);
+        const eotMinutes = (eotRad * 180 / Math.PI) * 4;
+        
+        // Solar transit (noon) in UTC hours
+        const solarNoonUTC = 12 - (lon / 15) - (eotMinutes / 60);
+        const latRad = (lat * Math.PI) / 180;
+        
+        function getHourAngle(altitudeDeg) {
+          const altRad = (altitudeDeg * Math.PI) / 180;
+          const cosHA = (Math.sin(altRad) - Math.sin(latRad) * Math.sin(declRad)) / (Math.cos(latRad) * Math.cos(declRad));
+          if (cosHA > 1 || cosHA < -1) return null;
+          return (Math.acos(cosHA) * 180 / Math.PI) / 15;
+        }
+        
+        // 1. Sunrise & Sunset (center of sun at -0.8333°)
+        const haSunrise = getHourAngle(-0.8333);
+        const sunriseUTC = haSunrise !== null ? solarNoonUTC - haSunrise : null;
+        const sunsetUTC = haSunrise !== null ? solarNoonUTC + haSunrise : null;
+        
+        // 2. Fajr (اذان صبح: -17.7° Institute of Geophysics, University of Tehran)
+        const haFajr = getHourAngle(-17.7);
+        const fajrUTC = haFajr !== null ? solarNoonUTC - haFajr : null;
+        
+        // 3. Maghrib (اذان مغرب: -4.5° Institute of Geophysics, University of Tehran)
+        const haMaghrib = getHourAngle(-4.5);
+        const maghribUTC = haMaghrib !== null ? solarNoonUTC + haMaghrib : null;
+        
+        // 4. Isha (اذان عشا: -14.0° Institute of Geophysics, University of Tehran)
+        const haIsha = getHourAngle(-14.0);
+        const ishaUTC = haIsha !== null ? solarNoonUTC + haIsha : null;
+        
+        // 5. Asr (اذان عصر: Shadow length equals object length plus shadow at noon)
+        const noonAltDeg = 90 - Math.abs(lat - declDeg);
+        const noonAltRad = (noonAltDeg * Math.PI) / 180;
+        const cotNoon = 1 / Math.tan(noonAltRad);
+        const asrAltRad = Math.atan(1 / (1 + cotNoon));
+        const asrAltDeg = (asrAltRad * 180) / Math.PI;
+        const haAsr = getHourAngle(asrAltDeg);
+        const asrUTC = haAsr !== null ? solarNoonUTC + haAsr : null;
+        
+        function toLocalHM(utcHours) {
+          if (utcHours === null || isNaN(utcHours)) return '--:--';
+          const localHours = (utcHours + (offsetMin / 60) + 48) % 24;
+          const totalMins = Math.round(localHours * 60) % 1440;
+          const hh = String(Math.floor(totalMins / 60)).padStart(2, '0');
+          const mm = String(totalMins % 60).padStart(2, '0');
+          return `${hh}:${mm}`;
+        }
+
+        function toLocalMinsOfDay(utcHours) {
+          if (utcHours === null || isNaN(utcHours)) return null;
+          const localHours = (utcHours + (offsetMin / 60) + 48) % 24;
+          return Math.round(localHours * 60) % 1440;
+        }
+
+        // 6. Islamic Midnight (نیمه شب شرعی): Exactly midway between Maghrib and Fajr of next morning
+        let midnightUTC = null;
+        if (maghribUTC !== null && fajrUTC !== null) {
+          let diffNight = (fajrUTC + 24 - maghribUTC) % 24;
+          midnightUTC = (maghribUTC + (diffNight / 2)) % 24;
+        }
+
+        return {
+          fajr: toLocalHM(fajrUTC),
+          sunrise: toLocalHM(sunriseUTC),
+          dhuhr: toLocalHM(solarNoonUTC),
+          asr: toLocalHM(asrUTC),
+          sunset: toLocalHM(sunsetUTC),
+          maghrib: toLocalHM(maghribUTC),
+          isha: toLocalHM(ishaUTC),
+          midnight: toLocalHM(midnightUTC),
+          rawMinutes: {
+            fajr: toLocalMinsOfDay(fajrUTC),
+            sunrise: toLocalMinsOfDay(sunriseUTC),
+            dhuhr: toLocalMinsOfDay(solarNoonUTC),
+            asr: toLocalMinsOfDay(asrUTC),
+            sunset: toLocalMinsOfDay(sunsetUTC),
+            maghrib: toLocalMinsOfDay(maghribUTC),
+            isha: toLocalMinsOfDay(ishaUTC),
+            midnight: toLocalMinsOfDay(midnightUTC)
+          }
+        };
+      }
+
+      // --- 4. UI Toast Notification ---
+      function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => {
+          toast.classList.remove('show');
+        }, 3000);
+      }
+
+      // --- 4. Interactive Map Management ---
+      function initMap() {
+        state.map = L.map('map', {
+          zoomControl: true,
+          attributionControl: true,
+          maxZoom: 18,
+          minZoom: 3
+        }).setView([state.lat, state.lon], 12);
+
+        // 1. Street Layer (OpenStreetMap) - Clamped to maxNativeZoom 18
+        state.layers.street = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          maxNativeZoom: 18,
+          attribution: '&copy; OpenStreetMap contributors'
+        });
+
+        // 2. High-Resolution Satellite Layer (Esri World Imagery) - Clamped to maxNativeZoom 18
+        state.layers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          maxZoom: 18,
+          maxNativeZoom: 18,
+          attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and GIS User Community'
+        });
+
+        // Add initial street layer to map
+        state.layers.street.addTo(state.map);
+
+        // Layer Switcher Buttons
+        const btnStreet = document.getElementById('btn-layer-street');
+        const btnSat = document.getElementById('btn-layer-sat');
+
+        if (btnStreet) {
+          btnStreet.addEventListener('click', () => setMapLayer('street'));
+        }
+        if (btnSat) {
+          btnSat.addEventListener('click', () => setMapLayer('satellite'));
+        }
+
+        // Auto-invalidate map size on container resize (e.g. desktop sticky scrolling or responsive changes)
+        if (window.ResizeObserver) {
+          const mapEl = document.getElementById('map-container');
+          if (mapEl) {
+            const ro = new ResizeObserver(() => {
+              if (state.map) state.map.invalidateSize();
+            });
+            ro.observe(mapEl);
+          }
+        }
+
+        // User Marker (Draggable)
+        state.userMarker = L.marker([state.lat, state.lon], {
+          icon: userIcon,
+          draggable: true
+        }).addTo(state.map);
+
+        state.userMarker.bindPopup('موقعیت انتخابی شما').openPopup();
+
+        // Drag handler for user marker
+        state.userMarker.on('dragend', function (e) {
+          const pos = e.target.getLatLng();
+          if (pos && typeof pos.lat === 'number' && typeof pos.lng === 'number' && !isNaN(pos.lat) && !isNaN(pos.lng)) {
+            updateLocation(pos.lat, pos.lng, 'نقطه انتخاب‌شده روی نقشه');
+          }
+        });
+
+        // Kaaba Landmark Marker
+        state.kaabaMarker = L.marker([KAABA_LAT, KAABA_LON], {
+          icon: kaabaIcon
+        }).addTo(state.map);
+
+        state.kaabaMarker.bindPopup('<b>کعبه مشرفه</b><br>مکه مکرمه، عربستان سعودی');
+
+        // Mode 1: Interactive Map Click captures exact Lat/Lon
+        state.map.on('click', function (e) {
+          if (e && e.latlng && !isNaN(e.latlng.lat) && !isNaN(e.latlng.lng)) {
+            const lat = parseFloat(e.latlng.lat.toFixed(6));
+            const lon = parseFloat(e.latlng.lng.toFixed(6));
+            if (!isNaN(lat) && !isNaN(lon)) {
+              updateLocation(lat, lon, 'نقطه جدید روی نقشه');
+            }
+          }
+        });
+
+        // Adjust bearing lines length based on zoom
+        state.map.on('zoomend', function () {
+          updateBearingLines();
+        });
+
+        // Initialize Touch Gesture Handling (1-Finger vs 2-Finger UX)
+        setupMapTouchGestures();
+      }
+
+      let touchMode = 'two-finger';
+      let gestureOverlayTimeout = null;
+
+      function showGesturePrompt(msg) {
+        const overlay = document.getElementById('map-gesture-overlay');
+        if (!overlay) return;
+        overlay.textContent = msg || 'برای جابه‌جایی نقشه از دو انگشت استفاده کنید';
+        overlay.classList.add('visible');
+        clearTimeout(gestureOverlayTimeout);
+        gestureOverlayTimeout = setTimeout(() => {
+          overlay.classList.remove('visible');
+        }, 1800);
+      }
+
+      function setTouchMode(mode) {
+        touchMode = mode;
+        const btn = document.getElementById('btn-touch-mode');
+        const label = document.getElementById('touch-mode-label');
+        if (mode === 'two-finger') {
+          if (state.map && state.map.dragging) {
+            state.map.dragging.disable();
+          }
+          if (label) label.textContent = 'لمس: ۲ انگشتی';
+          if (btn) {
+            btn.classList.add('active');
+            btn.title = 'حالت دو‌انگشتی فعال است (اسکرول آزاد صفحه؛ برای حرکت نقشه از دو انگشت استفاده کنید). کلیک برای تغییر به تک‌انگشتی.';
+          }
+        } else {
+          if (state.map && state.map.dragging) {
+            state.map.dragging.enable();
+          }
+          if (label) label.textContent = 'لمس: ۱ انگشتی';
+          if (btn) {
+            btn.classList.remove('active');
+            btn.title = 'حالت تک‌انگشتی فعال است (جابه‌جایی سریع نقشه با یک انگشت؛ برای اسکرول صفحه از حواشی استفاده کنید). کلیک برای تغییر به دو‌انگشتی.';
+          }
+        }
+      }
+
+      function setupMapTouchGestures() {
+        const mapEl = document.getElementById('map');
+        const btnTouch = document.getElementById('btn-touch-mode');
+        if (!mapEl) return;
+
+        const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.matchMedia('(pointer: coarse)').matches;
+
+        if (isTouchDevice) {
+          // On mobile & touch devices, default to two-finger mode to prevent scroll trapping
+          setTouchMode('two-finger');
+        } else {
+          // On desktop mouse devices, enable default dragging
+          if (state.map && state.map.dragging) {
+            state.map.dragging.enable();
+          }
+          const label = document.getElementById('touch-mode-label');
+          if (label) label.textContent = 'لمس: ۲ انگشتی';
+        }
+
+        if (btnTouch) {
+          btnTouch.addEventListener('click', () => {
+            if (touchMode === 'two-finger') {
+              setTouchMode('one-finger');
+              showToast('حالت لمس تک‌انگشتی فعال شد (پیمایش سریع نقشه)');
+            } else {
+              setTouchMode('two-finger');
+              showToast('حالت لمس دو‌انگشتی فعال شد (اسکرول آزاد صفحه)');
+            }
+          });
+        }
+
+        let touchStartPos = null;
+        let prevMid = null;
+
+        mapEl.addEventListener('touchstart', (e) => {
+          if (touchMode === 'one-finger') return;
+
+          if (e.touches.length === 1) {
+            touchStartPos = {
+              x: e.touches[0].clientX,
+              y: e.touches[0].clientY
+            };
+            prevMid = null;
+          } else if (e.touches.length >= 2) {
+            // Stop page scroll when 2 fingers touch the map
+            e.preventDefault();
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            prevMid = {
+              x: (t1.clientX + t2.clientX) / 2,
+              y: (t1.clientY + t2.clientY) / 2
+            };
+          }
+        }, { passive: false });
+
+        mapEl.addEventListener('touchmove', (e) => {
+          if (touchMode === 'one-finger') return;
+
+          if (e.touches.length === 1 && touchStartPos) {
+            // User is moving 1 finger over the map -> let page scroll naturally, show educational hint
+            const dx = Math.abs(e.touches[0].clientX - touchStartPos.x);
+            const dy = Math.abs(e.touches[0].clientY - touchStartPos.y);
+            if (dx > 12 || dy > 12) {
+              showGesturePrompt('برای جابه‌جایی نقشه از دو انگشت استفاده کنید');
+            }
+          } else if (e.touches.length >= 2) {
+            // Two-finger pan
+            e.preventDefault();
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            const currentMid = {
+              x: (t1.clientX + t2.clientX) / 2,
+              y: (t1.clientY + t2.clientY) / 2
+            };
+
+            if (prevMid && state.map) {
+              const panDx = prevMid.x - currentMid.x;
+              const panDy = prevMid.y - currentMid.y;
+              if (Math.abs(panDx) > 0.5 || Math.abs(panDy) > 0.5) {
+                state.map.panBy([panDx, panDy], { animate: false });
+              }
+            }
+            prevMid = currentMid;
+          }
+        }, { passive: false });
+
+        mapEl.addEventListener('touchend', (e) => {
+          if (e.touches.length < 2) {
+            prevMid = null;
+          }
+          if (e.touches.length === 0) {
+            touchStartPos = null;
+          }
+        });
+      }
+
+      function setMapLayer(mode) {
+        if (mode === state.mapLayerMode) return;
+        if (mode === 'satellite') {
+          if (state.map.hasLayer(state.layers.street)) {
+            state.map.removeLayer(state.layers.street);
+          }
+          state.layers.satellite.addTo(state.map);
+          state.mapLayerMode = 'satellite';
+          document.getElementById('btn-layer-sat').classList.add('active');
+          document.getElementById('btn-layer-street').classList.remove('active');
+          showToast('حالت نقشه به تصویر ماهواره‌ای تغییر یافت.');
+        } else {
+          if (state.map.hasLayer(state.layers.satellite)) {
+            state.map.removeLayer(state.layers.satellite);
+          }
+          state.layers.street.addTo(state.map);
+          state.mapLayerMode = 'street';
+          document.getElementById('btn-layer-street').classList.add('active');
+          document.getElementById('btn-layer-sat').classList.remove('active');
+          showToast('حالت نقشه به نقشه معابر (خیابان) تغییر یافت.');
+        }
+        updateBearingLines();
+      }
+
+      // Update Bearing Lines on Map
+      function updateBearingLines() {
+        if (!state.map) return;
+        const curLat = Number(state.lat);
+        const curLon = Number(state.lon);
+        if (isNaN(curLat) || isNaN(curLon)) return;
+
+        const zoom = state.map.getZoom();
+        // Dynamic vector distance: at least 5km, scales with zoom level
+        let lineDistKm = 10;
+        if (zoom <= 6) lineDistKm = 150;
+        else if (zoom <= 9) lineDistKm = 40;
+        else if (zoom <= 12) lineDistKm = 12;
+        else lineDistKm = 5;
+
+        const qiblaBearing = calculateQiblaBearing(curLat, curLon);
+
+        // Get simulated date-time
+        const target = getTargetDateTime();
+        const targetUtcDate = (target && target.utcDate instanceof Date) ? target.utcDate : new Date();
+        const sunPos = SunCalc.getPosition(targetUtcDate, curLat, curLon);
+        const sunBearing = sunAzimuthToBearing(sunPos.azimuth);
+        const shadowBearing = (sunBearing + 180) % 360;
+        const isSunUp = sunPos.altitude > 0;
+        const sunAltDeg = toDeg(sunPos.altitude);
+
+        const origin = [curLat, curLon];
+
+        // 1. True North Line (Dashed Red, #ef4444)
+        const northDest = computeDestinationPoint(curLat, curLon, 0, lineDistKm);
+        if (state.lines.north) state.map.removeLayer(state.lines.north);
+        if (!isNaN(northDest[0]) && !isNaN(northDest[1])) {
+          state.lines.north = L.polyline([origin, northDest], {
+            color: '#ef4444',
+            weight: 3,
+            dashArray: '6, 6',
+            opacity: 0.9
+          }).addTo(state.map);
+          state.lines.north.bindTooltip(`شمال جغرافیایی حقیقی: 0.00°`, { sticky: true });
+        }
+
+        // 2. Exact Qibla Line (Solid Green, #16a34a, 4px weight) - Always 100% valid regardless of day or night
+        const qiblaDest = computeDestinationPoint(curLat, curLon, qiblaBearing, lineDistKm);
+        if (state.lines.qibla) state.map.removeLayer(state.lines.qibla);
+        if (!isNaN(qiblaDest[0]) && !isNaN(qiblaDest[1])) {
+          state.lines.qibla = L.polyline([origin, qiblaDest], {
+            color: '#16a34a',
+            weight: 4,
+            opacity: 0.95
+          }).addTo(state.map);
+          state.lines.qibla.bindTooltip(
+            `جهت دقیق قبله: ${formatNum(qiblaBearing)}° (${getCardinalDirection(qiblaBearing)})${!isSunUp ? ' - معتبر در تاریکی و شب' : ''}`, 
+            { sticky: true }
+          );
+        }
+
+        // Full Geodesic Great-Circle to Kaaba
+        if (state.lines.geodesicToKaaba) state.map.removeLayer(state.lines.geodesicToKaaba);
+        state.lines.geodesicToKaaba = L.polyline([origin, [KAABA_LAT, KAABA_LON]], {
+          color: '#16a34a',
+          weight: 2,
+          dashArray: '4, 8',
+          opacity: 0.55
+        }).addTo(state.map);
+
+        // 3. Current Sun Bearing (Dotted Amber, #f59e0b)
+        const sunDest = computeDestinationPoint(curLat, curLon, sunBearing, lineDistKm);
+        if (state.lines.sun) state.map.removeLayer(state.lines.sun);
+        if (!isNaN(sunDest[0]) && !isNaN(sunDest[1])) {
+          state.lines.sun = L.polyline([origin, sunDest], {
+            color: '#f59e0b',
+            weight: 3,
+            dashArray: '2, 6',
+            opacity: isSunUp ? 0.9 : 0.2
+          }).addTo(state.map);
+          state.lines.sun.bindTooltip(
+            `راستای تابش خورشید: ${formatNum(sunBearing)}° | ارتفاع: ${formatNum(sunAltDeg)}° ${isSunUp ? '(بالای افق)' : '(زیر افق - شب)'}`, 
+            { sticky: true }
+          );
+        }
+
+        // 4. Current Shadow Line (Only drawn when Sun is physically above the horizon)
+        if (state.lines.shadow) {
+          state.map.removeLayer(state.lines.shadow);
+          state.lines.shadow = null;
+        }
+        if (isSunUp) {
+          const shadowDest = computeDestinationPoint(curLat, curLon, shadowBearing, lineDistKm);
+          if (!isNaN(shadowDest[0]) && !isNaN(shadowDest[1])) {
+            state.lines.shadow = L.polyline([origin, shadowDest], {
+              color: state.mapLayerMode === 'satellite' ? '#f8fafc' : '#334155',
+              weight: 4,
+              opacity: 0.95
+            }).addTo(state.map);
+            state.lines.shadow.bindTooltip(`راستای سایه شاخص: ${formatNum(shadowBearing)}°`, { sticky: true });
+          }
+        }
+
+        // Update Legend labels
+        document.getElementById('legend-qibla-deg').textContent = formatNum(qiblaBearing) + '°';
+        document.getElementById('legend-sun-deg').textContent = isSunUp ? formatNum(sunBearing) + '°' : 'زیر افق (شب)';
+        document.getElementById('legend-shadow-deg').textContent = isSunUp ? formatNum(shadowBearing) + '°' : 'تشکیل نمی‌شود (شب)';
+      }
+
+      // --- 5. Target Date & Time Calculations ---
+      function getTargetDateTime() {
+        const gy = state.selectedDate.getFullYear();
+        const gm = state.selectedDate.getMonth();
+        const gd = state.selectedDate.getDate();
+        const hours = Math.floor(state.simTimeMinutes / 60);
+        const minutes = state.simTimeMinutes % 60;
+
+        const offsetMin = getTimezoneOffsetMinutes(state.lat, state.lon);
+        // Calculate true UTC moment corresponding to this local date & time at the location
+        const localTargetMs = Date.UTC(gy, gm, gd, hours, minutes, 0, 0);
+        const utcMs = localTargetMs - (offsetMin * 60 * 1000);
+
+        return {
+          utcDate: new Date(utcMs),
+          year: gy,
+          month: gm + 1,
+          day: gd,
+          hours: hours,
+          minutes: minutes
+        };
+      }
+
+      // Format Calculated Moment in Persian (Local Target Date/Time)
+      function updateCalculatedMomentDisplay(target) {
+        const hh = String(target.hours).padStart(2, '0');
+        const mm = String(target.minutes).padStart(2, '0');
+        let datePart = '';
+
+        if (window.jalaali) {
+          const j = window.jalaali.toJalaali(target.year, target.month, target.day);
+          datePart = `${j.jy}/${String(j.jm).padStart(2, '0')}/${String(j.jd).padStart(2, '0')}`;
+        } else {
+          datePart = `${target.year}/${String(target.month).padStart(2, '0')}/${String(target.day).padStart(2, '0')}`;
+        }
+
+        const calcMomentEl = document.getElementById('calc-moment-text');
+        if (calcMomentEl) {
+          calcMomentEl.textContent = `${datePart} - ${hh}:${mm}`;
+        }
+      }
+
+      // Run All Astronomical Recalculations
+      function recalculate() {
+        const qiblaDeg = calculateQiblaBearing(state.lat, state.lon);
+        const distanceKm = calculateHaversineDistance(state.lat, state.lon);
+        const target = getTargetDateTime();
+
+        // Feed exact UTC timestamp to SunCalc
+        const sunPos = SunCalc.getPosition(target.utcDate, state.lat, state.lon);
+        const sunBearing = sunAzimuthToBearing(sunPos.azimuth);
+        const shadowBearing = (sunBearing + 180) % 360;
+        const altitudeDeg = toDeg(sunPos.altitude);
+        const isSunUp = altitudeDeg > 0;
+
+        // Update header moment badge
+        updateCalculatedMomentDisplay(target);
+
+        // Calculate Full 7 Islamic Prayer Times with 1-Minute Precision
+        try {
+          const pt = calculatePrayerTimes(state.selectedDate, state.lat, state.lon);
+          const elFajr = document.getElementById('pt-fajr');
+          const elSunrise = document.getElementById('pt-sunrise');
+          const elDhuhr = document.getElementById('pt-dhuhr');
+          const elAsr = document.getElementById('pt-asr');
+          const elMaghrib = document.getElementById('pt-maghrib');
+          const elIsha = document.getElementById('pt-isha');
+          const elMidnight = document.getElementById('pt-midnight');
+
+          if (elFajr) elFajr.textContent = pt.fajr;
+          if (elSunrise) elSunrise.textContent = pt.sunrise;
+          if (elDhuhr) elDhuhr.textContent = pt.dhuhr;
+          if (elAsr) elAsr.textContent = pt.asr;
+          if (elMaghrib) elMaghrib.textContent = pt.maghrib;
+          if (elIsha) elIsha.textContent = pt.isha;
+          if (elMidnight) elMidnight.textContent = pt.midnight;
+
+          // Highlight upcoming prayer time
+          const geoNow = getGeoNowDate(state.lat, state.lon);
+          const currentMins = geoNow.hours * 60 + geoNow.minutes;
+          
+          document.querySelectorAll('.prayer-cell').forEach(c => c.classList.remove('next-prayer'));
+          
+          const prayerItems = [
+            { id: 'cell-fajr', min: pt.rawMinutes.fajr },
+            { id: 'cell-sunrise', min: pt.rawMinutes.sunrise },
+            { id: 'cell-dhuhr', min: pt.rawMinutes.dhuhr },
+            { id: 'cell-asr', min: pt.rawMinutes.asr },
+            { id: 'cell-maghrib', min: pt.rawMinutes.maghrib },
+            { id: 'cell-isha', min: pt.rawMinutes.isha },
+            { id: 'cell-midnight', min: pt.rawMinutes.midnight }
+          ];
+
+          let nextP = prayerItems.find(p => p.min !== null && p.min > currentMins);
+          if (!nextP) nextP = prayerItems[0];
+          if (nextP) {
+            const nextEl = document.getElementById(nextP.id);
+            if (nextEl) nextEl.classList.add('next-prayer');
+          }
+        } catch (e) {
+          console.warn('Prayer times ephemeris calculation error:', e);
+        }
+
+        // Night / Darkness Status & Warning Notice Handling
+        const nightBanner = document.getElementById('night-alert-banner');
+        const mapNightBadge = document.getElementById('map-night-indicator');
+        const nightSunAltEl = document.getElementById('night-sun-alt');
+        const mapNightText = document.getElementById('map-night-text');
+
+        if (!isSunUp) {
+          if (nightBanner) nightBanner.style.display = 'flex';
+          if (nightSunAltEl) nightSunAltEl.textContent = formatNum(Math.abs(altitudeDeg), 1);
+          if (mapNightBadge) {
+            mapNightBadge.style.display = 'flex';
+            if (mapNightText) mapNightText.textContent = `شب و تاریکی (خورشید: ${formatNum(Math.abs(altitudeDeg), 1)}° زیر افق)`;
+          }
+        } else {
+          if (nightBanner) nightBanner.style.display = 'none';
+          if (mapNightBadge) mapNightBadge.style.display = 'none';
+        }
+
+        // Angular difference between shadow and Qibla (minimum distance on circle)
+        const diff = Math.abs(shadowBearing - qiblaDeg);
+        const minDiff = Math.min(diff, 360 - diff);
+
+        // Update UI Badges & Metric Cards
+        document.getElementById('display-lat').textContent = `${formatNum(state.lat, 6)}° N`;
+        document.getElementById('display-lon').textContent = `${formatNum(state.lon, 6)}° E`;
+
+        document.getElementById('val-qibla-deg').textContent = formatNum(qiblaDeg);
+        document.getElementById('val-qibla-cardinal').textContent = getCardinalDirection(qiblaDeg);
+        const angleBarEl = document.getElementById('qibla-angle-bar');
+        if (angleBarEl) {
+          const percent = Math.min(100, Math.max(0, (qiblaDeg / 360) * 100));
+          angleBarEl.style.width = `${percent.toFixed(1)}%`;
+        }
+
+        document.getElementById('val-distance-km').textContent = Math.round(distanceKm).toLocaleString('en-US');
+
+        const diffValEl = document.getElementById('val-diff-deg');
+        const diffStatusEl = document.getElementById('val-diff-status');
+        const sunStatusEl = document.getElementById('val-sun-status');
+
+        if (isSunUp) {
+          document.getElementById('val-shadow-deg').textContent = formatNum(shadowBearing) + '°';
+          sunStatusEl.textContent = `خورشید در آسمان (ارتفاع: ${formatNum(altitudeDeg)}°)`;
+          sunStatusEl.style.color = '#16a34a';
+
+          diffValEl.textContent = formatNum(minDiff) + '°';
+          if (minDiff < 1.0) {
+            diffStatusEl.textContent = 'هم‌اکنون انطباق کامل سایه شاخص با قبله برقرار است!';
+            diffStatusEl.style.color = '#16a34a';
+            diffValEl.parentElement.style.color = '#16a34a';
+          } else if (minDiff < 5.0) {
+            diffStatusEl.textContent = 'نزدیک به انطباق (اختلاف زیر ۵ درجه)';
+            diffStatusEl.style.color = '#f59e0b';
+            diffValEl.parentElement.style.color = 'var(--text-main)';
+          } else {
+            diffStatusEl.textContent = 'عدم انطباق در این ساعت روز';
+            diffStatusEl.style.color = 'var(--text-muted)';
+            diffValEl.parentElement.style.color = 'var(--text-main)';
+          }
+        } else {
+          document.getElementById('val-shadow-deg').textContent = '--';
+          sunStatusEl.textContent = `شب و تاریکی (خورشید: ${formatNum(Math.abs(altitudeDeg), 1)}° زیر افق)`;
+          sunStatusEl.style.color = '#64748b';
+
+          diffValEl.textContent = '--';
+          diffStatusEl.textContent = 'در شب به دلیل عدم حضور خورشید، سایه فیزیکی وجود ندارد و انطباق سایه معنایی ندارد!';
+          diffStatusEl.style.color = '#ea580c';
+          diffValEl.parentElement.style.color = '#64748b';
+        }
+
+        // Rotate Compass needle to Qibla bearing
+        const needle = document.getElementById('compass-needle');
+        if (needle) {
+          needle.style.transform = `rotate(${qiblaDeg}deg)`;
+        }
+
+        // Daily Alignment Scan
+        findDailyAlignment(qiblaDeg);
+
+        // Update Map Layers
+        updateBearingLines();
+      }
+
+      // --- 6. Daily Alignment Finder Algorithm ---
+      function findDailyAlignment(qiblaBearing) {
+        const gy = state.selectedDate.getFullYear();
+        const gm = state.selectedDate.getMonth();
+        const gd = state.selectedDate.getDate();
+        const offsetMin = getTimezoneOffsetMinutes(state.lat, state.lon);
+
+        // Start of local day at the selected geographic coordinate in UTC milliseconds
+        const startOfDayLocalMs = Date.UTC(gy, gm, gd, 0, 0, 0, 0);
+        const startOfDayUtcMs = startOfDayLocalMs - (offsetMin * 60 * 1000);
+
+        let bestMinute = -1;
+        let minError = 999;
+        let bestSunAlt = -99;
+
+        // Scan every minute from 00:00 to 23:59 (1440 minutes)
+        for (let m = 0; m < 1440; m++) {
+          const testUtcMs = startOfDayUtcMs + (m * 60000);
+          const testTime = new Date(testUtcMs);
+          const pos = SunCalc.getPosition(testTime, state.lat, state.lon);
+
+          // Only valid if sun is above the horizon (> 0.005 radians to account for refraction)
+          if (pos.altitude > 0.005) {
+            const sBearing = sunAzimuthToBearing(pos.azimuth);
+            const shadow = (sBearing + 180) % 360;
+            const diff = Math.abs(shadow - qiblaBearing);
+            const err = Math.min(diff, 360 - diff);
+
+            if (err < minError) {
+              minError = err;
+              bestMinute = m;
+              bestSunAlt = toDeg(pos.altitude);
+            }
+          }
+        }
+
+        const dot = document.getElementById('align-dot');
+        const timeResult = document.getElementById('align-time-result');
+        const detailResult = document.getElementById('align-detail-result');
+
+        if (bestMinute !== -1) {
+          // Refine to exact second around bestMinute
+          let bestSecUtcMs = startOfDayUtcMs + (bestMinute * 60000);
+          let refinedMinError = minError;
+
+          for (let s = -30; s <= 30; s += 2) {
+            const testSecUtcMs = startOfDayUtcMs + (bestMinute * 60000) + (s * 1000);
+            const t = new Date(testSecUtcMs);
+            const pos = SunCalc.getPosition(t, state.lat, state.lon);
+            if (pos.altitude > 0) {
+              const shadow = (sunAzimuthToBearing(pos.azimuth) + 180) % 360;
+              const diff = Math.abs(shadow - qiblaBearing);
+              const err = Math.min(diff, 360 - diff);
+              if (err < refinedMinError) {
+                refinedMinError = err;
+                bestSecUtcMs = testSecUtcMs;
+              }
+            }
+          }
+
+          // Convert UTC timestamp of best second back to target location's local time components
+          const localBestSecMs = bestSecUtcMs + (offsetMin * 60 * 1000);
+          const alignDate = new Date(localBestSecMs);
+          const hh = String(alignDate.getUTCHours()).padStart(2, '0');
+          const mm = String(alignDate.getUTCMinutes()).padStart(2, '0');
+          const ss = String(alignDate.getUTCSeconds()).padStart(2, '0');
+
+          if (refinedMinError <= 1.0) {
+            dot.className = 'status-dot green';
+            timeResult.innerHTML = `انطباق کامل در ساعت <span class="latin-num" style="color:#16a34a; font-size:1.05rem;">${hh}:${mm}:${ss}</span> (خطا: <span class="latin-num">${formatNum(refinedMinError)}°</span>)`;
+            detailResult.textContent = `در این ثانیه سایه شاخص عمود دقیقاً رو به قبله است (ارتفاع خورشید: ${formatNum(bestSunAlt)}°).`;
+          } else {
+            dot.className = 'status-dot amber';
+            timeResult.innerHTML = `نزدیک‌ترین انطباق در ساعت <span class="latin-num">${hh}:${mm}</span> (اختلاف: <span class="latin-num">${formatNum(refinedMinError)}°</span>)`;
+            detailResult.textContent = `به دلیل میل فصلی خورشید در این تاریخ، سایه دقیقاً روی خط قبله نمی‌افتد؛ نزدیک‌ترین زمان با این اختلاف محاسبه شد.`;
+          }
+        } else {
+          dot.className = 'status-dot amber';
+          timeResult.textContent = 'در این تاریخ خورشید در افق این منطقه طلوع نمی‌کند (شب قطبی).';
+          detailResult.textContent = 'امکان انطباق سایه وجود ندارد.';
+        }
+      }
+
+      // --- 7. Geocoding & Search via OpenStreetMap Nominatim API ---
+      let searchTimeout = null;
+
+      async function searchNominatim(query) {
+        if (!query || query.trim().length < 2) return;
+        const dropdown = document.getElementById('search-results-dropdown');
+        dropdown.innerHTML = '<div class="search-item" style="color:#64748b;">در حال جستجو در OpenStreetMap...</div>';
+        dropdown.style.display = 'block';
+
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
+          const response = await fetch(url, {
+            headers: {
+              'Accept-Language': 'fa,en'
+            }
+          });
+
+          if (!response.ok) throw new Error('خطا در ارتباط با سرویس نقشه');
+
+          const data = await response.json();
+          if (!data || data.length === 0) {
+            dropdown.innerHTML = '<div class="search-item" style="color:#ef4444;">مکانی با این نام پیدا نشد.</div>';
+            return;
+          }
+
+          dropdown.innerHTML = '';
+          data.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'search-item';
+            div.innerHTML = `<strong>${item.name || item.display_name.split(',')[0]}</strong> <span style="color:#94a3b8; font-size:0.75rem;">(${item.display_name})</span>`;
+            div.addEventListener('click', () => {
+              const lat = parseFloat(parseFloat(item.lat).toFixed(6));
+              const lon = parseFloat(parseFloat(item.lon).toFixed(6));
+              updateLocation(lat, lon, item.name || item.display_name.split(',')[0]);
+              dropdown.style.display = 'none';
+              document.getElementById('city-search').value = item.name || item.display_name.split(',')[0];
+            });
+            dropdown.appendChild(div);
+          });
+        } catch (err) {
+          dropdown.innerHTML = '<div class="search-item" style="color:#ef4444;">خطا در دریافت نتایج. لطفاً دوباره تلاش کنید.</div>';
+        }
+      }
+
+      // Mode 3: HTML5 Geolocation (GPS Hardware Coordinates)
+      function fetchGpsLocation() {
+        if (!navigator.geolocation) {
+          showToast('مرورگر شما از قابلیت مکان‌یابی GPS پشتیبانی نمی‌کند.');
+          return;
+        }
+
+        showToast('در حال دریافت مختصات دقیق سخت‌افزاری GPS...');
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            const lat = parseFloat(pos.coords.latitude.toFixed(6));
+            const lon = parseFloat(pos.coords.longitude.toFixed(6));
+            updateLocation(lat, lon, 'موقعیت فعلی شما (GPS)');
+            showToast(`موقعیت شما با دقت ${Math.round(pos.coords.accuracy)} متر دریافت شد.`);
+          },
+          err => {
+            console.warn('Geolocation error:', err);
+            showToast('دسترسی به GPS مسدود شد یا در دسترس نیست. می‌توانید روی نقشه کلیک کنید.');
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          }
+        );
+      }
+
+      // Update Location State and Map View
+      function updateLocation(lat, lon, name = '') {
+        const numLat = Number(lat);
+        const numLon = Number(lon);
+        if (isNaN(numLat) || isNaN(numLon) || numLat < -90 || numLat > 90 || numLon < -180 || numLon > 180) {
+          console.warn('Invalid coordinates passed to updateLocation:', lat, lon);
+          return;
+        }
+        state.lat = numLat;
+        state.lon = numLon;
+        state.city = name;
+
+        const prayerBadge = document.getElementById('prayer-city-badge');
+        if (prayerBadge) {
+          prayerBadge.textContent = name || `${formatNum(state.lat, 2)}°, ${formatNum(state.lon, 2)}°`;
+        }
+
+        if (state.userMarker && !isNaN(state.lat) && !isNaN(state.lon)) {
+          state.userMarker.setLatLng([state.lat, state.lon]);
+          state.userMarker.bindPopup(`<b>${name || 'موقعیت انتخابی'}</b><br>${state.lat}°, ${state.lon}°`).openPopup();
+        }
+
+        if (state.map && !isNaN(state.lat) && !isNaN(state.lon)) {
+          state.map.panTo([state.lat, state.lon], { animate: true });
+        }
+
+        updateLiveClockDisplay();
+        recalculate();
+      }
+
+      // --- 8. Dual-Calendar Management (Jalali & Gregorian) ---
+      function initCalendars() {
+        const jYearEl = document.getElementById('j-year');
+        if (jYearEl && !jYearEl.value) {
+          const nowJ = window.jalaali ? window.jalaali.toJalaali(new Date()) : { jy: 1403 };
+          jYearEl.value = nowJ.jy;
+          const jYearTag = document.getElementById('j-year-tag');
+          if (jYearTag) jYearTag.textContent = `سال ${nowJ.jy} شمسی`;
+        }
+
+        syncCalendarsFromDate(state.selectedDate);
+
+        // Tab Switching
+        const tabJalali = document.getElementById('tab-jalali');
+        const tabGregorian = document.getElementById('tab-gregorian');
+        const jControls = document.getElementById('jalali-controls');
+        const gControls = document.getElementById('gregorian-controls');
+
+        tabJalali.addEventListener('click', () => {
+          tabJalali.classList.add('active');
+          tabGregorian.classList.remove('active');
+          jControls.style.display = 'flex';
+          gControls.style.display = 'none';
+          state.calendarMode = 'jalali';
+        });
+
+        tabGregorian.addEventListener('click', () => {
+          tabGregorian.classList.add('active');
+          tabJalali.classList.remove('active');
+          gControls.style.display = 'flex';
+          jControls.style.display = 'none';
+          state.calendarMode = 'gregorian';
+        });
+
+        // Jalali Dropdown Handlers (Month & Day only, Year is automatic)
+        document.getElementById('j-month').addEventListener('change', () => {
+          updateJalaliDays();
+          onJalaliChange();
+        });
+        document.getElementById('j-day').addEventListener('change', onJalaliChange);
+
+        // Gregorian Date Input Handler
+        document.getElementById('g-date-input').addEventListener('change', e => {
+          if (!e.target.value) return;
+          const [gy, gm, gd] = e.target.value.split('-').map(Number);
+          state.selectedDate = new Date(gy, gm - 1, gd);
+          syncCalendarsFromDate(state.selectedDate);
+          recalculate();
+        });
+
+        // Today Buttons
+        document.getElementById('btn-today').addEventListener('click', resetToToday);
+        document.getElementById('btn-today-g').addEventListener('click', resetToToday);
+      }
+
+      function updateJalaliDays() {
+        const jy = parseInt(document.getElementById('j-year').value, 10) || 1403;
+        const jm = parseInt(document.getElementById('j-month').value, 10) || 1;
+        const jDaySelect = document.getElementById('j-day');
+        const prevDay = parseInt(jDaySelect.value, 10) || 1;
+
+        let maxDays = 31;
+        if (window.jalaali && window.jalaali.jalaaliMonthLength) {
+          maxDays = window.jalaali.jalaaliMonthLength(jy, jm);
+        } else {
+          maxDays = jm <= 6 ? 31 : (jm <= 11 ? 30 : 29);
+        }
+
+        jDaySelect.innerHTML = '';
+        for (let d = 1; d <= maxDays; d++) {
+          const opt = document.createElement('option');
+          opt.value = d;
+          opt.textContent = d;
+          jDaySelect.appendChild(opt);
+        }
+
+        jDaySelect.value = Math.min(prevDay, maxDays);
+      }
+
+      function onJalaliChange() {
+        const jy = parseInt(document.getElementById('j-year').value, 10);
+        const jm = parseInt(document.getElementById('j-month').value, 10);
+        const jd = parseInt(document.getElementById('j-day').value, 10);
+
+        if (window.jalaali) {
+          const g = window.jalaali.toGregorian(jy, jm, jd);
+          state.selectedDate = new Date(g.gy, g.gm - 1, g.gd);
+          document.getElementById('g-date-input').value = `${g.gy}-${String(g.gm).padStart(2, '0')}-${String(g.gd).padStart(2, '0')}`;
+          document.getElementById('converted-date-label').textContent = `${g.gy}/${String(g.gm).padStart(2, '0')}/${String(g.gd).padStart(2, '0')} (میلادی)`;
+        }
+        recalculate();
+      }
+
+      function syncCalendarsFromDate(d) {
+        const gy = d.getFullYear();
+        const gm = d.getMonth() + 1;
+        const gd = d.getDate();
+
+        document.getElementById('g-date-input').value = `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')}`;
+
+        if (window.jalaali) {
+          const j = window.jalaali.toJalaali(gy, gm, gd);
+          const jYearEl = document.getElementById('j-year');
+          if (jYearEl) jYearEl.value = j.jy;
+          const jYearTag = document.getElementById('j-year-tag');
+          if (jYearTag) jYearTag.textContent = `سال ${j.jy} شمسی`;
+          document.getElementById('j-month').value = j.jm;
+          updateJalaliDays();
+          document.getElementById('j-day').value = j.jd;
+          document.getElementById('converted-date-label').textContent = `${j.jy}/${String(j.jm).padStart(2, '0')}/${String(j.jd).padStart(2, '0')} (شمسی)`;
+        }
+      }
+
+      function resetToToday() {
+        const geoNow = getGeoNowDate(state.lat, state.lon);
+        state.selectedDate = new Date(geoNow.year, geoNow.month - 1, geoNow.day);
+        state.simTimeMinutes = geoNow.hours * 60 + geoNow.minutes;
+        document.getElementById('time-slider').value = state.simTimeMinutes;
+        updateSimTimeDisplay();
+        syncCalendarsFromDate(state.selectedDate);
+        recalculate();
+        showToast('تاریخ و زمان به امروز و ساعت محلی موقعیت بازنشانی شد.');
+      }
+
+      // Real-time ticking live clock & synchronous dual telemetry display (Local Geographic Time)
+      function updateLiveClockDisplay() {
+        const geoNow = getGeoNowDate(state.lat, state.lon);
+        const liveClockEl = document.getElementById('clock-live-text');
+        const liveNowDisplay = document.getElementById('time-live-now-display');
+
+        let liveDateStr = '';
+        if (window.jalaali) {
+          const j = window.jalaali.toJalaali(geoNow.year, geoNow.month, geoNow.day);
+          liveDateStr = `${j.jy}/${String(j.jm).padStart(2, '0')}/${String(j.jd).padStart(2, '0')}`;
+        } else {
+          liveDateStr = `${geoNow.year}/${String(geoNow.month).padStart(2, '0')}/${String(geoNow.day).padStart(2, '0')}`;
+        }
+
+        const hh = String(geoNow.hours).padStart(2, '0');
+        const mm = String(geoNow.minutes).padStart(2, '0');
+        const ss = String(geoNow.seconds).padStart(2, '0');
+        const timeStr = `${hh}:${mm}:${ss}`;
+
+        const tzH = Math.floor(Math.abs(geoNow.offsetMinutes) / 60);
+        const tzM = Math.abs(geoNow.offsetMinutes) % 60;
+        const tzSign = geoNow.offsetMinutes >= 0 ? '+' : '-';
+        const tzStr = tzM > 0 ? `UTC${tzSign}${tzH}:${String(tzM).padStart(2, '0')}` : `UTC${tzSign}${tzH}`;
+
+        if (liveClockEl) {
+          liveClockEl.textContent = `${liveDateStr} | ${timeStr} (${tzStr})`;
+        }
+        if (liveNowDisplay) {
+          liveNowDisplay.textContent = timeStr;
+        }
+      }
+
+      // --- 9. Time Slider & Live Clock ---
+      function initTimeControls() {
+        const slider = document.getElementById('time-slider');
+        slider.value = state.simTimeMinutes;
+        updateSimTimeDisplay();
+
+        slider.addEventListener('input', e => {
+          state.simTimeMinutes = parseInt(e.target.value, 10);
+          updateSimTimeDisplay();
+          recalculate();
+        });
+
+        const btnResetTime = document.getElementById('btn-reset-time');
+        if (btnResetTime) {
+          btnResetTime.addEventListener('click', () => {
+            const geoNow = getGeoNowDate(state.lat, state.lon);
+            state.selectedDate = new Date(geoNow.year, geoNow.month - 1, geoNow.day);
+            state.simTimeMinutes = geoNow.hours * 60 + geoNow.minutes;
+            slider.value = state.simTimeMinutes;
+            updateSimTimeDisplay();
+            syncCalendarsFromDate(state.selectedDate);
+            recalculate();
+            showToast('زمان و تاریخ محاسبه به لحظه کنونی موقعیت جغرافیایی هماهنگ شد.');
+          });
+        }
+
+        // Run live clock ticks
+        updateLiveClockDisplay();
+        setInterval(updateLiveClockDisplay, 1000);
+      }
+
+      function updateSimTimeDisplay() {
+        const hh = String(Math.floor(state.simTimeMinutes / 60)).padStart(2, '0');
+        const mm = String(state.simTimeMinutes % 60).padStart(2, '0');
+        const simTimeEl = document.getElementById('sim-time-text');
+        if (simTimeEl) {
+          simTimeEl.textContent = `${hh}:${mm}`;
+        }
+      }
+
+      // --- 10. Event Listeners & UI Binding ---
+      function setupEvents() {
+        // Preset City Buttons
+        document.querySelectorAll('.city-chip').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const lat = parseFloat(btn.getAttribute('data-lat'));
+            const lon = parseFloat(btn.getAttribute('data-lon'));
+            const name = btn.getAttribute('data-name');
+            document.getElementById('city-search').value = name;
+            updateLocation(lat, lon, name);
+          });
+        });
+
+        // Search Input Events
+        const searchInput = document.getElementById('city-search');
+        const searchBtn = document.getElementById('btn-search');
+
+        searchBtn.addEventListener('click', () => {
+          searchNominatim(searchInput.value);
+        });
+
+        searchInput.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            searchNominatim(searchInput.value);
+          }
+        });
+
+        searchInput.addEventListener('input', e => {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => {
+            searchNominatim(e.target.value);
+          }, 450);
+        });
+
+        // Close search dropdown on click outside
+        document.addEventListener('click', e => {
+          const dropdown = document.getElementById('search-results-dropdown');
+          if (!e.target.closest('.search-input-wrapper')) {
+            dropdown.style.display = 'none';
+          }
+        });
+
+        // GPS Button
+        document.getElementById('btn-gps').addEventListener('click', fetchGpsLocation);
+
+        // Map Control Buttons
+        document.getElementById('btn-recenter').addEventListener('click', () => {
+          if (state.map) {
+            state.map.setView([state.lat, state.lon], 13, { animate: true });
+          }
+        });
+
+        document.getElementById('btn-fit-all').addEventListener('click', () => {
+          if (state.map) {
+            const bounds = L.latLngBounds([
+              [state.lat, state.lon],
+              [KAABA_LAT, KAABA_LON]
+            ]);
+            state.map.fitBounds(bounds, { padding: [50, 50] });
+          }
+        });
+
+        // PWA Install Handlers & iOS Modal
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', e => {
+          e.preventDefault();
+          deferredPrompt = e;
+          const installBtn = document.getElementById('btn-install-app');
+          if (installBtn) {
+            installBtn.style.display = 'inline-flex';
+          }
+        });
+
+        const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const iosModal = document.getElementById('ios-pwa-modal');
+        const closeIosModal = () => {
+          if (iosModal) iosModal.style.display = 'none';
+        };
+
+        const installBtn = document.getElementById('btn-install-app');
+        if (installBtn) {
+          installBtn.addEventListener('click', () => {
+            if (isIos) {
+              if (iosModal) iosModal.style.display = 'flex';
+            } else if (deferredPrompt) {
+              deferredPrompt.prompt();
+              deferredPrompt.userChoice.then(choiceResult => {
+                if (choiceResult.outcome === 'accepted') {
+                  showToast('برنامه با موفقیت به عنوان وب‌اپلیکیشن نصب شد.');
+                }
+                deferredPrompt = null;
+              });
+            } else {
+              // Fallback guide for Android / Desktop
+              showToast('در اندروید/کروم: از منوی سه‌نقطه مرورگر گزینه «افزودن به صفحه اصلی» یا «نصب برنامه» را بزنید.');
+            }
+          });
+        }
+
+        const btnCloseIos = document.getElementById('btn-close-ios-modal');
+        if (btnCloseIos) btnCloseIos.addEventListener('click', closeIosModal);
+        const btnDoneIos = document.getElementById('btn-done-ios-modal');
+        if (btnDoneIos) btnDoneIos.addEventListener('click', closeIosModal);
+        const iosBackdrop = document.getElementById('ios-modal-backdrop');
+        if (iosBackdrop) iosBackdrop.addEventListener('click', closeIosModal);
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(err => {
+              console.log('SW registration error:', err);
+            });
+          });
+        }
+      }
+
+      // --- 11. Initial Application Boot ---
+      window.addEventListener('DOMContentLoaded', () => {
+        // Guarantee all accordion sections are closed on page load
+        document.querySelectorAll('details').forEach(d => {
+          d.removeAttribute('open');
+          d.open = false;
+        });
+
+        // Initialize state to the location's precise current local date and time
+        const geoNow = getGeoNowDate(state.lat, state.lon);
+        state.selectedDate = new Date(geoNow.year, geoNow.month - 1, geoNow.day);
+        state.simTimeMinutes = geoNow.hours * 60 + geoNow.minutes;
+
+        initMap();
+        initCalendars();
+        initTimeControls();
+        setupEvents();
+        recalculate();
+      });
+
+    })();
+  </script>
+</body>
+</html>
